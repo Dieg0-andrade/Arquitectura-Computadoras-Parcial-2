@@ -1,0 +1,6 @@
+node_modules/
+.clasprc.json
+.clasp.json
+.DS_Store
+# Archivos generados por herramientas/construir.js (no editar ni commitear salvo integración)
+dist/
