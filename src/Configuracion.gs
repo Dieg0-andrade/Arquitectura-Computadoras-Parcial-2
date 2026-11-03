@@ -12,7 +12,8 @@ const HOJAS = {
   COMPILADOR: 'Compilador',
   LOG: 'Log',
   ISA: 'ISA',
-  CACHE_IO: 'Cache_IO'
+  CACHE_IO: 'Cache_IO',
+  SWAP: 'Swap'
 };
 
 /** Mapa de memoria (espacio de direcciones de 8 bits: 00h–FFh). */
