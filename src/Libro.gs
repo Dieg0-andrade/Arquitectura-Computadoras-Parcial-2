@@ -30,7 +30,15 @@ function prepararLibro() {
     if (respuesta !== ui.Button.YES) return;
   }
 
-  const orden = [HOJAS.CPU, HOJAS.RAM, HOJAS.CODIGO, HOJAS.COMPILADOR, HOJAS.LOG, HOJAS.ISA];
+  const orden = [
+  HOJAS.CPU,
+  HOJAS.RAM,
+  HOJAS.CODIGO,
+  HOJAS.COMPILADOR,
+  HOJAS.LOG,
+  HOJAS.ISA,
+  HOJAS.CACHE_IO
+];
   orden.forEach((nombre, i) => {
     let sh = ss.getSheetByName(nombre);
     if (!sh) sh = ss.insertSheet(nombre);
@@ -47,6 +55,7 @@ function prepararLibro() {
   Diseno.construirCompilador(ss.getSheetByName(HOJAS.COMPILADOR));
   Diseno.construirLog(ss.getSheetByName(HOJAS.LOG));
   Diseno.construirIsa(ss.getSheetByName(HOJAS.ISA));
+  VistaCache.construir(ss.getSheetByName(HOJAS.CACHE_IO));
   ISA.escribirEnHoja();
 
   try {
