@@ -6,7 +6,8 @@
  * ejecuta una por una.
  *
  * Cada micro-operación es un objeto simple (se puede guardar como JSON):
- *   { fase, tipo: 'bus',    origen, destino }   ->  destino ← origen
+ *   { fase, tipo: 'bus',    origen, destino, acceso? }   ->  destino ← origen
+ *       acceso: 'I' (instrucción) o 'D' (dato); solo en los accesos a RAM
  *   { fase, tipo: 'incPC' }                      ->  PC ← PC + 1
  *   { fase, tipo: 'decodificar' }                ->  interpreta el IR
  *   { fase, tipo: 'alu',    op }                 ->  ALU: REN1 op REN2
@@ -37,7 +38,7 @@ const MicroOperaciones = {
     const F = FASES.BUSQUEDA;
     return [
       { fase: F, tipo: 'bus', origen: 'PC', destino: 'MAR' },
-      { fase: F, tipo: 'bus', origen: 'RAM', destino: 'MDR' },
+      { fase: F, tipo: 'bus', origen: 'RAM', destino: 'MDR', acceso: 'I' },
       { fase: F, tipo: 'bus', origen: 'MDR', destino: 'IR' },
       { fase: F, tipo: 'incPC' },
       { fase: FASES.DECODIFICACION, tipo: 'decodificar' }
@@ -55,7 +56,7 @@ const MicroOperaciones = {
 
     if (entrada.bytes === 2) {
       ops.push({ fase: D, tipo: 'bus', origen: 'PC', destino: 'MAR' });
-      ops.push({ fase: D, tipo: 'bus', origen: 'RAM', destino: 'MDR', operando: true });
+      ops.push({ fase: D, tipo: 'bus', origen: 'RAM', destino: 'MDR', operando: true, acceso: 'I' });
       ops.push({ fase: D, tipo: 'incPC' });
     }
 
@@ -76,14 +77,14 @@ const MicroOperaciones = {
     }
     if (m === 'LOAD') {
       ops.push({ fase: E, tipo: 'bus', origen: 'MDR', destino: 'MAR' });
-      ops.push({ fase: E, tipo: 'bus', origen: 'RAM', destino: 'MDR' });
+      ops.push({ fase: E, tipo: 'bus', origen: 'RAM', destino: 'MDR', acceso: 'D' });
       ops.push({ fase: A, tipo: 'bus', origen: 'MDR', destino: entrada.destino });
       return ops;
     }
     if (m === 'STORE') {
       ops.push({ fase: E, tipo: 'bus', origen: 'MDR', destino: 'MAR' });
       ops.push({ fase: E, tipo: 'bus', origen: entrada.origen, destino: 'MDR' });
-      ops.push({ fase: A, tipo: 'bus', origen: 'MDR', destino: 'RAM' });
+      ops.push({ fase: A, tipo: 'bus', origen: 'MDR', destino: 'RAM', acceso: 'D' });
       return ops;
     }
 

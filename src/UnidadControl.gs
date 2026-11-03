@@ -149,7 +149,7 @@ const UnidadControl = {
 
     switch (op.tipo) {
       case 'bus': {
-        const evento = Bus.transferir(op.origen, op.destino);
+        const evento = Bus.transferir(op.origen, op.destino, undefined, op.acceso);
         estado.bus_ = evento;
         if (op.operando) {
           estado.texto = ISA.formatear(ISA.porOpcode(estado.opcode), evento.valor);

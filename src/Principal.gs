@@ -27,6 +27,7 @@ function onOpen() {
       .addItem('Ejecutar todas', 'probarTodo')
       .addSeparator()
       .addItem('Memoria', 'probarMemoria')
+      .addItem('Acceso a memoria', 'probarAccesoMemoria')
       .addItem('Registros', 'probarRegistros')
       .addItem('ALU', 'probarALU')
       .addItem('ISA', 'probarISA')
