@@ -10,7 +10,7 @@ const VistaRam = {
   construir(hoja) {
     Diseno.reiniciar(hoja);
 
-    hoja.getRange('B1').setValue('MEMORIA PRINCIPAL (RAM) — 256 bytes · 00h–FFh')
+    hoja.getRange('B1').setValue('RAM FÍSICA — 256 bytes · 8 marcos de 32 bytes')
       .setFontSize(14).setFontWeight('bold').setFontColor(COLORES.TITULO);
 
     VistaRam.construirMatriz(hoja);
@@ -48,32 +48,71 @@ const VistaRam = {
     Memoria.limpiar();
     VistaRam.pintarSegmentos();
 
-    // Línea gruesa entre el segmento de código (filas 0–7) y el de datos (filas 8–F)
-    hoja.getRange(MATRIZ_RAM.PRIMERA_FILA + 8, MATRIZ_RAM.PRIMERA_COL, 1, tamano)
-      .setBorder(true, null, null, null, null, null, COLORES.ENCABEZADO_FONDO, SpreadsheetApp.BorderStyle.SOLID_THICK);
 
-    // Etiquetas de segmento a la izquierda de la matriz
-    const etiquetaCodigo = hoja.getRange(MATRIZ_RAM.PRIMERA_FILA, 1, 8, 1);
-    etiquetaCodigo.merge().setValue('CÓDIGO\n00h–7Fh').setBackground(COLORES.SEG_CODIGO);
-    const etiquetaDatos = hoja.getRange(MATRIZ_RAM.PRIMERA_FILA + 8, 1, 8, 1);
-    etiquetaDatos.merge().setValue('DATOS\n80h–FFh').setBackground(COLORES.SEG_DATOS);
-    [etiquetaCodigo, etiquetaDatos].forEach(r => r.setVerticalAlignment('middle')
-      .setHorizontalAlignment('center').setFontWeight('bold').setWrap(true));
+    // Cada marco contiene 32 bytes: 2 filas de 16.
+    // Conservamos la matriz física original de 16x16.
+    for (let marco = 0; marco < 8; marco++) {
+      const fila = MATRIZ_RAM.PRIMERA_FILA + marco * 2;
+      const inicio = marco * 32;
+      const fin = inicio + 31;
 
-    hoja.setColumnWidth(1, 70);
-    hoja.setColumnWidth(MATRIZ_RAM.COL_ENCABEZADO, 48);
+      const color = marco % 2 === 0
+        ? COLORES.SEG_CODIGO
+        : COLORES.SEG_DATOS;
+
+      // Etiqueta del marco físico.
+      hoja.getRange(fila, 1, 2, 1)
+        .merge()
+        .setValue(
+          'MARCO ' + marco + '\n' +
+          UtilMemoria.aHex(inicio) + 'h–' +
+          UtilMemoria.aHex(fin) + 'h'
+        )
+        .setBackground(color)
+        .setVerticalAlignment('middle')
+        .setHorizontalAlignment('center')
+        .setFontWeight('bold')
+        .setWrap(true);
+
+      // Separador entre marcos.
+      if (marco > 0) {
+        hoja.getRange(
+          fila,
+          MATRIZ_RAM.COL_ENCABEZADO,
+          1,
+          tamano + 1
+        ).setBorder(
+          true, null, null, null, null, null,
+          COLORES.ENCABEZADO_FONDO,
+          SpreadsheetApp.BorderStyle.SOLID_THICK
+        );
+      }
+    }
+
+    hoja.setColumnWidth(1, 95);
+
     hoja.setColumnWidths(MATRIZ_RAM.PRIMERA_COL, tamano, 34);
   },
 
-  /** Restaura el color de segmento de toda la matriz. */
+ 
+  /** Colorea los 8 marcos físicos sin modificar sus bytes. */
   pintarSegmentos() {
     const hoja = UtilMemoria.hoja();
-    const mitad = MATRIZ_RAM.TAMANO / 2;
-    hoja.getRange(MATRIZ_RAM.PRIMERA_FILA, MATRIZ_RAM.PRIMERA_COL, mitad, MATRIZ_RAM.TAMANO)
-      .setBackground(COLORES.SEG_CODIGO);
-    hoja.getRange(MATRIZ_RAM.PRIMERA_FILA + mitad, MATRIZ_RAM.PRIMERA_COL, mitad, MATRIZ_RAM.TAMANO)
-      .setBackground(COLORES.SEG_DATOS);
+
+    for (let marco = 0; marco < 8; marco++) {
+      const color = marco % 2 === 0
+        ? COLORES.SEG_CODIGO
+        : COLORES.SEG_DATOS;
+
+      hoja.getRange(
+        MATRIZ_RAM.PRIMERA_FILA + marco * 2,
+        MATRIZ_RAM.PRIMERA_COL,
+        2,
+        MATRIZ_RAM.TAMANO
+      ).setBackground(color);
+    }
   },
+
 
   /**
    * Inspector hecho con fórmulas de la hoja, así se actualiza solo cuando
@@ -123,8 +162,8 @@ const VistaRam = {
       .setBackground(COLORES.ENCABEZADO_FONDO).setFontColor(COLORES.ENCABEZADO_TEXTO)
       .setFontWeight('bold').setHorizontalAlignment('center');
     const elementos = [
-      ['Segmento de código (00h–7Fh)', COLORES.SEG_CODIGO],
-      ['Segmento de datos (80h–FFh)', COLORES.SEG_DATOS],
+      ['Marco físico par', COLORES.SEG_CODIGO],
+      ['Marco físico impar', COLORES.SEG_DATOS],
       ['Celda activa (acceso actual)', COLORES.ACTIVO],
       ['Campo editable', COLORES.ENTRADA]
     ];

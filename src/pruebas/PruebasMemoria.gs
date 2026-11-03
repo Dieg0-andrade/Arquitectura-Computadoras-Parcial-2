@@ -40,6 +40,27 @@ function suiteMemoria_() {
     t.igual(UtilMemoria.segmentoDe(0x80), 'DATOS');
   });
 
+  
+  t.prueba('RAM muestra 8 marcos de 32 bytes', () => {
+    const hoja = UtilMemoria.hoja();
+
+    for (let marco = 0; marco < 8; marco++) {
+      const inicio = marco * 32;
+      const fin = inicio + 31;
+      const fila = MATRIZ_RAM.PRIMERA_FILA + marco * 2;
+
+      const etiqueta = hoja.getRange(fila, 1).getDisplayValue();
+
+      t.igual(etiqueta.includes('MARCO ' + marco), true);
+      t.igual(etiqueta.includes(UtilMemoria.aHex(inicio) + 'h'), true);
+      t.igual(etiqueta.includes(UtilMemoria.aHex(fin) + 'h'), true);
+
+      t.igual(UtilMemoria.posicion(inicio).fila, fila);
+      t.igual(UtilMemoria.posicion(fin).fila, fila + 1);
+    }
+  });
+
+
   // ── Integración con la hoja RAM ──
   const respaldo = Memoria.volcar();
   try {
