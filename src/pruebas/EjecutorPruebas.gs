@@ -53,6 +53,6 @@ function mostrarReporte_(suites) {
 }
 
 function probarTodo() {
-  mostrarReporte_([suiteMemoria_(), suiteAccesoMemoria_(), suiteRegistros_(), suiteALU_(), suiteISA_(), suiteBus_(),
+  mostrarReporte_([suiteMemoria_(), suiteAccesoMemoria_(), suiteRegistros_(), suiteRegistrosGenerales_(), suiteALU_(), suiteISA_(), suiteBus_(),
     suiteEnsamblador_(), suiteUnidadControl_(), suiteSimulacion_(), suiteBorde_(), suiteCompilador_()]);
 }
