@@ -330,7 +330,7 @@ const GeneradorCodigo = {
   },
 
   reservadas_() {
-    const r = { AX: true, BX: true, DB: true, VAR: true, MIENTRAS: true, SI: true };
+    const r = { AX: true, BX: true, CX: true, DX: true, DB: true, VAR: true, MIENTRAS: true, SI: true };
     TABLA_ISA.forEach(e => { r[e.mnemonico] = true; });
     return r;
   }
