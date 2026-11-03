@@ -53,25 +53,6 @@ function suiteEnsamblador_() {
     t.igual(r.ok, true);
     t.igual(bytes(r, 0, 4), '10 05 21 00');
   });
-  t.prueba('CX y DX: MOV CX, 5 / MOV DX, 7 / ADD CX, DX / HLT → 18 05 19 07 8B 00', () => {
-    const r = Ensamblador.ensamblar(['MOV CX, 5', 'MOV DX, 7', 'ADD CX, DX', 'HLT']);
-    t.igual(r.ok, true);
-    t.igual(bytes(r, 0, 6), '18 05 19 07 8B 00');
-  });
-  t.prueba('CX y DX: INC, DEC, CMP, LOAD y STORE se ensamblan', () => {
-    const r = Ensamblador.ensamblar(['.data', 'x DB 9', '.code', 'LOAD CX, [x]', 'INC CX', 'DEC DX', 'CMP CX, 3', 'STORE [x], DX', 'HLT']);
-    t.igual(r.ok, true);
-    t.igual(bytes(r, 0, 9), '1A 80 60 63 68 03 1D 80 00');
-  });
-  t.prueba('CX y DX se escriben en minúsculas y no se pueden usar como nombre de variable', () => {
-    t.igual(Ensamblador.ensamblar(['mov cx, 1', 'HLT']).ok, true);
-    t.igual(Ensamblador.ensamblar(['.data', 'cx DB 1', '.code', 'HLT']).ok, false);
-  });
-  t.prueba('instrucciones que no existen con CX/DX dan error con número de línea', () => {
-    const r = Ensamblador.ensamblar(['HLT', 'AND CX, 1']);
-    t.igual(r.ok, false);
-    t.igual(r.errores[0].linea, 2);
-  });
   t.prueba('salto hacia adelante: JMP fin se resuelve en la segunda pasada', () => {
     const r = Ensamblador.ensamblar(['JMP fin', 'MOV AX, 1', 'fin: HLT']);
     t.igual(r.ok, true);

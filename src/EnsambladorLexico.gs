@@ -18,7 +18,7 @@ const TIPO_TOKEN = {
   DIRECTIVA: 'DIRECTIVA',     // .data .code
   ETIQUETA: 'ETIQUETA',       // bucle:
   MNEMONICO: 'MNEMONICO',     // MOV ADD JZ ...
-  REGISTRO: 'REGISTRO',       // AX BX CX DX
+  REGISTRO: 'REGISTRO',       // AX BX
   DB: 'DB',                   // declaración de dato
   NUMERO: 'NUMERO',           // 15 0x0F 0Fh
   IDENTIFICADOR: 'IDENT',     // nombres de variables o etiquetas usadas
@@ -27,7 +27,7 @@ const TIPO_TOKEN = {
   COMA: ','
 };
 
-const REGISTROS_ENSAMBLADOR = ['AX', 'BX', 'CX', 'DX'];
+const REGISTROS_ENSAMBLADOR = ['AX', 'BX'];
 
 const LexerEnsamblador = {
 

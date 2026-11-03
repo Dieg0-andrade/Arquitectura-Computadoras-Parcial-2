@@ -61,13 +61,6 @@ function suiteCompilador_() {
   });
 
   // ── Errores ──
-  t.prueba('CX y DX son nombres reservados en el lenguaje de alto nivel', () => {
-    ['cx', 'DX'].forEach(n => {
-      const r = Compilador.compilar(['var ' + n + ' = 1']);
-      t.igual(r.ok, false);
-      t.igual(r.errores[0].mensaje.indexOf('reservado') !== -1, true);
-    });
-  });
   t.prueba('errores con número de línea: variable no declarada, falta "}", reservado y fuera de rango', () => {
     const e1 = Compilador.compilar(['var a = 1', 'b = a']);
     t.igual(e1.ok, false); t.igual(e1.errores[0].linea, 2);
