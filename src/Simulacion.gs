@@ -157,7 +157,9 @@ const Simulacion = {
       detenido: UnidadControl.estaDetenido(),
       pc: hex(Registros.leer('PC')),
       ax: hex(Registros.leer('AX')),
-      bx: hex(Registros.leer('BX'))
+      bx: hex(Registros.leer('BX')),
+      cx: hex(Registros.leer('CX')),
+      dx: hex(Registros.leer('DX'))
     };
   }
 };
