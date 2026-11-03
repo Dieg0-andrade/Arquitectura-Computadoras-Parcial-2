@@ -17,21 +17,16 @@
  *
  * Organización de los opcodes por grupos (nibble alto):
  *   0x -> control   1x -> transferencia   2x -> aritmética
- *   3x -> lógica    4x -> saltos          5x -> RESERVADO para E/S (IN / OUT)
- *   6x..Ax -> variantes con CX y DX (Parcial 2, ver generarIsaRegistrosExtra_)
- *
- * Registros de propósito general: AX, BX, CX y DX (8 bits). Los opcodes del
- * Parcial 1 (solo AX y BX) NO cambian; las variantes con CX/DX usan opcodes
- * nuevos para no romper programas ya ensamblados.
+ *   3x -> lógica    4x -> saltos
  *
  * Campos de cada entrada:
  *   opcode, mnemonico, operandos (texto), bytes, modo, descripcion
- *   destino  -> destino: 'AX' | 'BX' | 'CX' | 'DX' | 'MEM' | null
- *   origen  -> origen: 'AX' | 'BX' | 'CX' | 'DX' | 'INM' | 'MEM' | 'DIR' | null
+ *   destino  -> registro destino ('AX' | 'BX' | 'MEM' | null)
+ *   origen  -> origen: 'AX' | 'BX' | 'INM' | 'MEM' | 'DIR' | null
  *   alu  -> operación de ALU que usa (o null)
  */
 
-const TABLA_ISA_PARCIAL1_ = [
+const TABLA_ISA = [
   // ── Control ──
   { opcode: 0x00, mnemonico: 'HLT',   operandos: '',         bytes: 1, modo: 'implícito', destino: null,  origen: null,   alu: null,  descripcion: 'Detiene el reloj del CPU' },
 
@@ -79,72 +74,6 @@ const TABLA_ISA_PARCIAL1_ = [
   { opcode: 0x42, mnemonico: 'JNZ',   operandos: 'dir',      bytes: 2, modo: 'absoluto',  destino: null,  origen: 'DIR', alu: null,  descripcion: 'Si ZF = 0: PC ← dir' }
 ];
 
-/**
- * Variantes con CX y DX (tarea 1-3). Esquema de opcodes:
- *
- *   18h–1Dh  MOV r, inm · LOAD r, [dir] · STORE [dir], r      (r = CX, DX)
- *   60h–63h  INC CX · INC DX · DEC CX · DEC DX
- *   64h–69h  ADD/SUB/CMP r, inm                                (r = CX, DX)
- *   70h–7Fh  MOV  destino, origen   ┐ opcode = base + 4·d + s
- *   80h–8Fh  ADD  destino, origen   │ con AX=0, BX=1, CX=2, DX=3
- *   90h–9Fh  SUB  destino, origen   │ (d = destino, s = origen, d ≠ s).
- *   A0h–AFh  CMP  destino, origen   ┘ Los pares (AX,BX) y (BX,AX) ya existen
- *                                     con sus opcodes del Parcial 1 (12h, 21h...),
- *                                     así que esos huecos quedan sin usar.
- *   50h–5Fh  reservado para E/S (IN / OUT)
- */
-const REGISTROS_ISA_ = ['AX', 'BX', 'CX', 'DX'];
-
-function generarIsaRegistrosExtra_() {
-  const lista = [];
-  const agregar = (opcode, mnemonico, operandos, bytes, modo, destino, origen, alu, descripcion) =>
-    lista.push({ opcode: opcode, mnemonico: mnemonico, operandos: operandos, bytes: bytes, modo: modo,
-      destino: destino, origen: origen, alu: alu, descripcion: descripcion });
-  const nuevos = ['CX', 'DX'];
-
-  // Transferencia con CX y DX
-  nuevos.forEach((r, i) => {
-    agregar(0x18 + i, 'MOV',   r + ', inm',   2, 'inmediato', r,     'INM', null, r + ' ← dato inmediato');
-    agregar(0x1A + i, 'LOAD',  r + ', [dir]', 2, 'directo',   r,     'MEM', null, r + ' ← RAM[dir]');
-    agregar(0x1C + i, 'STORE', '[dir], ' + r, 2, 'directo',   'MEM', r,     null, 'RAM[dir] ← ' + r);
-  });
-
-  // INC y DEC
-  nuevos.forEach((r, i) => {
-    agregar(0x60 + i, 'INC', r, 1, 'registro', r, null, 'INC', r + ' ← ' + r + ' + 1');
-    agregar(0x62 + i, 'DEC', r, 1, 'registro', r, null, 'DEC', r + ' ← ' + r + ' − 1');
-  });
-
-  // ADD, SUB y CMP con dato inmediato
-  [['ADD', 0x64, '+'], ['SUB', 0x66, '−'], ['CMP', 0x68, '−']].forEach(([m, base, signo]) => {
-    nuevos.forEach((r, i) => {
-      const desc = m === 'CMP' ? 'Banderas de ' + r + ' − inm (no guarda)' : r + ' ← ' + r + ' ' + signo + ' inm';
-      agregar(base + i, m, r + ', inm', 2, 'inmediato', r, 'INM', m, desc);
-    });
-  });
-
-  // MOV, ADD, SUB y CMP entre registros: opcode = base + 4·d + s
-  [['MOV', 0x70, null, '←'], ['ADD', 0x80, 'ADD', '+'], ['SUB', 0x90, 'SUB', '−'], ['CMP', 0xA0, 'CMP', '−']]
-    .forEach(([m, base, alu, signo]) => {
-      REGISTROS_ISA_.forEach((d, i) => {
-        REGISTROS_ISA_.forEach((s, j) => {
-          if (i === j) return;                                  // no hay MOV AX, AX ni similares
-          if ((i === 0 && j === 1) || (i === 1 && j === 0)) return; // ya existen en el Parcial 1
-          let desc;
-          if (m === 'MOV') desc = d + ' ← ' + s;
-          else if (m === 'CMP') desc = 'Banderas de ' + d + ' − ' + s + ' (no guarda)';
-          else desc = d + ' ← ' + d + ' ' + signo + ' ' + s;
-          agregar(base + 4 * i + j, m, d + ', ' + s, 1, 'registro', d, s, alu, desc);
-        });
-      });
-    });
-
-  return lista;
-}
-
-/** Tabla completa, ordenada por opcode: 36 instrucciones del Parcial 1 + 56 con CX y DX = 92. */
-const TABLA_ISA = TABLA_ISA_PARCIAL1_.concat(generarIsaRegistrosExtra_()).sort((a, b) => a.opcode - b.opcode);
-
 const ISA = {
 
   /** Busca por opcode (número). Devuelve la entrada o null si no existe. */
@@ -155,7 +84,7 @@ const ISA = {
   /**
    * Busca por firma: mnemónico + tipos de operandos, p. ej.
    * ISA.porFirma('ADD', ['AX', 'INM']) -> entrada de 20h.
-   * Tipos: 'AX', 'BX', 'CX', 'DX', 'INM', 'MEM' (dirección entre corchetes), 'DIR'.
+   * Tipos: 'AX', 'BX', 'INM', 'MEM' (dirección entre corchetes), 'DIR'.
    */
   porFirma(mnemonico, tiposOp) {
     const clave = ISA.claveFirma(mnemonico, tiposOp);

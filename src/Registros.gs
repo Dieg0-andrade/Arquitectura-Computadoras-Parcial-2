@@ -5,8 +5,7 @@
  * puede editar a mano durante la demostración.
  *
  * Registros de 8 bits (se guardan como hex de 2 dígitos):
- *   PC, IR, MAR, MDR, AX, BX, CX, DX, REN1, REN2, RESULTADO_ALU
- *   (AX, BX, CX y DX son los 4 registros de propósito general)
+ *   PC, IR, MAR, MDR, AX, BX, REN1, REN2, RESULTADO_ALU
  * Banderas de 1 bit (R. Estado):
  *   ZF (cero), CF (acarreo/préstamo), SF (signo = bit 7)
  * Campos de texto de la Unidad de Control:
@@ -22,7 +21,7 @@
  *   Registros.reiniciar()                    -> todo a cero y estado LISTO
  */
 
-const LISTA_REGISTROS = ['PC', 'IR', 'MAR', 'MDR', 'AX', 'BX', 'CX', 'DX', 'REN1', 'REN2', 'RESULTADO_ALU'];
+const LISTA_REGISTROS = ['PC', 'IR', 'MAR', 'MDR', 'AX', 'BX', 'REN1', 'REN2', 'RESULTADO_ALU'];
 const LISTA_BANDERAS = ['ZF', 'CF', 'SF'];
 const CAMPOS_TEXTO = ['OP_ALU', 'DECODIFICADO', 'ESTADO', 'FASE', 'MICROPASO', 'RELOJ', 'BUS_ULTIMO'];
 

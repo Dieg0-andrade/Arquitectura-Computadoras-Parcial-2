@@ -25,7 +25,7 @@
     .fase { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #FFD54F; font-weight: bold; font-size: 11px; }
     .micro { font-family: 'Roboto Mono', monospace; font-size: 14px; font-weight: bold; margin: 8px 0 2px; }
     .detalle { font-family: 'Roboto Mono', monospace; font-size: 11px; color: #546E7A; min-height: 14px; }
-    .regs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 8px; text-align: center; }
+    .regs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 8px; text-align: center; }
     .regs div { background: #ECEFF1; border-radius: 4px; padding: 4px; font-family: 'Roboto Mono', monospace; }
     .regs small { display: block; color: #607D8B; font-family: Roboto, Arial, sans-serif; font-size: 10px; }
     .mensaje { margin-top: 10px; padding: 8px; border-radius: 4px; font-size: 12px; display: none; white-space: pre-wrap; }
@@ -67,8 +67,6 @@
       <div><small>PC</small><span id="pc">00h</span></div>
       <div><small>AX</small><span id="ax">00h</span></div>
       <div><small>BX</small><span id="bx">00h</span></div>
-      <div><small>CX</small><span id="cx">00h</span></div>
-      <div><small>DX</small><span id="dx">00h</span></div>
     </div>
   </div>
 
@@ -90,8 +88,6 @@
       el('pc').textContent = r.pc;
       el('ax').textContent = r.ax;
       el('bx').textContent = r.bx;
-      el('cx').textContent = r.cx;
-      el('dx').textContent = r.dx;
     }
 
     function mensaje(texto, tipo) {

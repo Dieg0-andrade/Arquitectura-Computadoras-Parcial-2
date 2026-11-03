@@ -23,27 +23,7 @@ function suiteRegistros_() {
       t.lanzaError(() => Registros.escribir('AX', -1));
     });
     t.prueba('escribir rechaza registros que no existen', () => {
-      t.lanzaError(() => Registros.escribir('EX', 1));
-    });
-    t.prueba('CX y DX son registros de 8 bits con rango propio en la hoja', () => {
-      ['CX', 'DX'].forEach(r => {
-        t.igual(Registros.esRegistro(r), true);
-        Registros.escribir(r, 0xFF);
-        t.igual(Registros.leer(r), 0xFF);
-        Registros.escribir(r, 0);
-        t.igual(Registros.leer(r), 0);
-        t.lanzaError(() => Registros.escribir(r, 256));
-        t.lanzaError(() => Registros.escribir(r, -1));
-      });
-    });
-    t.prueba('AX, BX, CX y DX no se pisan entre sí', () => {
-      ['AX', 'BX', 'CX', 'DX'].forEach((r, i) => Registros.escribir(r, 0xA0 + i));
-      ['AX', 'BX', 'CX', 'DX'].forEach((r, i) => t.igual(Registros.leer(r), 0xA0 + i));
-    });
-    t.prueba('la instantánea incluye CX y DX', () => {
-      Registros.escribir('CX', 0x12); Registros.escribir('DX', 0x34);
-      const s = Registros.instantanea();
-      t.igual(s.CX, 0x12); t.igual(s.DX, 0x34);
+      t.lanzaError(() => Registros.escribir('CX', 1));
     });
     t.prueba('escribirBanderas actualiza solo las banderas indicadas', () => {
       Registros.escribirBanderas({ ZF: 1, CF: 0, SF: 1 });
