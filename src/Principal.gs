@@ -32,6 +32,7 @@ function onOpen() {
       .addItem('Registros CX y DX', 'probarRegistrosGenerales')
       .addItem('ALU', 'probarALU')
       .addItem('ISA', 'probarISA')
+      .addItem('Micro-palabra', 'probarMicroPalabra')
       .addItem('Bus', 'probarBus')
       .addItem('Ensamblador', 'probarEnsamblador')
       .addItem('Unidad de control', 'probarUnidadControl')
