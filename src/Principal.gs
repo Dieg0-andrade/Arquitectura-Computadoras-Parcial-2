@@ -29,6 +29,7 @@ function onOpen() {
       .addItem('Memoria', 'probarMemoria')
       .addItem('Acceso a memoria', 'probarAccesoMemoria')
       .addItem('Registros', 'probarRegistros')
+      .addItem('Registros CX y DX', 'probarRegistrosGenerales')
       .addItem('ALU', 'probarALU')
       .addItem('ISA', 'probarISA')
       .addItem('Bus', 'probarBus')

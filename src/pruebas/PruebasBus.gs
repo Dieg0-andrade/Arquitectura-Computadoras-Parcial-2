@@ -49,7 +49,7 @@ function suiteBus_() {
     t.prueba('rechaza orígenes/destinos inválidos', () => {
       t.lanzaError(() => Bus.transferir('AX', 'AX'));
       t.lanzaError(() => Bus.transferir('AX', 'INM'));
-      t.lanzaError(() => Bus.transferir('CX', 'AX'));
+      t.lanzaError(() => Bus.transferir('EX', 'AX'));
     });
   } finally {
     Bus.limpiarSuscriptores();

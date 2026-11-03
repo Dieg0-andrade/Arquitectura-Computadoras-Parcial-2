@@ -8,7 +8,7 @@
 /** Rangos con nombre que usa el resto del código (celda de valor de cada registro). */
 const NOMBRES = {
   PC: 'REG_PC', IR: 'REG_IR', MAR: 'REG_MAR', MDR: 'REG_MDR',
-  AX: 'REG_AX', BX: 'REG_BX', REN1: 'REG_REN1', REN2: 'REG_REN2',
+  AX: 'REG_AX', BX: 'REG_BX', CX: 'REG_CX', DX: 'REG_DX', REN1: 'REG_REN1', REN2: 'REG_REN2',
   OP_ALU: 'ALU_OPERACION', RESULTADO_ALU: 'ALU_RESULTADO',
   ZF: 'BANDERA_ZF', CF: 'BANDERA_CF', SF: 'BANDERA_SF',
   RELOJ: 'CPU_RELOJ', FASE: 'CPU_FASE', MICROPASO: 'CPU_MICROPASO',
@@ -238,19 +238,21 @@ const VistaCpu = {
     hoja.getParent().setNamedRange(NOMBRES.FASE, faseActual);
 
     // ── ALU + registros generales ───────────────────────────────────
-    Diseno.bloque(hoja, 'I3:N15', 'ALU Y REGISTROS · Unidad Aritmético-Lógica', COLORES.UNIDAD_ALU);
+    Diseno.bloque(hoja, 'I3:N18', 'ALU Y REGISTROS · Unidad Aritmético-Lógica', COLORES.UNIDAD_ALU);
     Diseno.registro(hoja, 5, 9, 'Acumulador · AX', NOMBRES.AX);
     Diseno.registro(hoja, 5, 12, 'BX', NOMBRES.BX);
-    Diseno.registro(hoja, 8, 9, 'REN1 · entrada A', NOMBRES.REN1);
-    Diseno.registro(hoja, 8, 12, 'REN2 · entrada B', NOMBRES.REN2);
-    Diseno.campo(hoja, 11, 9, 'C.OP · operación', NOMBRES.OP_ALU, '—');
-    Diseno.registro(hoja, 11, 12, 'Resultado ALU', NOMBRES.RESULTADO_ALU);
+    Diseno.registro(hoja, 8, 9, 'Contador · CX', NOMBRES.CX);
+    Diseno.registro(hoja, 8, 12, 'Datos · DX', NOMBRES.DX);
+    Diseno.registro(hoja, 11, 9, 'REN1 · entrada A', NOMBRES.REN1);
+    Diseno.registro(hoja, 11, 12, 'REN2 · entrada B', NOMBRES.REN2);
+    Diseno.campo(hoja, 14, 9, 'C.OP · operación', NOMBRES.OP_ALU, '—');
+    Diseno.registro(hoja, 14, 12, 'Resultado ALU', NOMBRES.RESULTADO_ALU);
 
-    hoja.getRange(14, 9).setValue('R. Estado').setFontWeight('bold').setFontSize(9);
+    hoja.getRange(17, 9).setValue('R. Estado').setFontWeight('bold').setFontSize(9);
     [['ZF', NOMBRES.ZF], ['CF', NOMBRES.CF], ['SF', NOMBRES.SF]].forEach((f, i) => {
       const col = 10 + i;
-      hoja.getRange(14, col).setValue(f[0]).setFontWeight('bold').setHorizontalAlignment('center').setFontSize(9);
-      const v = hoja.getRange(15, col);
+      hoja.getRange(17, col).setValue(f[0]).setFontWeight('bold').setHorizontalAlignment('center').setFontSize(9);
+      const v = hoja.getRange(18, col);
       v.setNumberFormat('@').setValue('0').setFontFamily('Roboto Mono').setFontWeight('bold')
         .setHorizontalAlignment('center').setBackground(COLORES.REGISTRO)
         .setBorder(true, true, true, true, null, null, COLORES.BORDE, SpreadsheetApp.BorderStyle.SOLID);
@@ -263,8 +265,8 @@ const VistaCpu = {
     Diseno.registro(hoja, 19, 5, 'RIM · MDR', NOMBRES.MDR);
 
     // ── Bus del sistema (se amplía en el Parcial 2) ────────────────────
-    Diseno.bloque(hoja, 'I17:N21', 'BUS DEL SISTEMA · único camino CPU ↔ memoria', COLORES.REGISTRO);
-    Diseno.campo(hoja, 19, 9, 'Última transferencia', NOMBRES.BUS_ULTIMO, '—', 6);
+    Diseno.bloque(hoja, 'I20:N24', 'BUS DEL SISTEMA · único camino CPU ↔ memoria', COLORES.REGISTRO);
+    Diseno.campo(hoja, 22, 9, 'Última transferencia', NOMBRES.BUS_ULTIMO, '—', 6);
 
     // ── Últimas micro-operaciones (la más reciente arriba) ─────────────
     VistaCpu.construirPanelLog(hoja);
@@ -277,25 +279,25 @@ const VistaCpu = {
 
   /**
    * Panel con las últimas micro-operaciones en la hoja CPU, para seguir la
-   * ejecución sin cambiar de hoja. Filas 25–34; columnas combinadas:
+   * ejecución sin cambiar de hoja. Filas 28–37; columnas combinadas:
    * B paso · C:D fase · E:G micro-operación · H:N detalle.
    */
   construirPanelLog(hoja) {
-    Diseno.bloque(hoja, 'B23:N34', 'ÚLTIMAS MICRO-OPERACIONES · ámbar = destino · celeste = origen', COLORES.REGISTRO);
-    const encabezado = hoja.getRange(24, 2, 1, 13);
+    Diseno.bloque(hoja, 'B26:N37', 'ÚLTIMAS MICRO-OPERACIONES · ámbar = destino · celeste = origen', COLORES.REGISTRO);
+    const encabezado = hoja.getRange(27, 2, 1, 13);
     encabezado.setFontWeight('bold').setFontSize(9);
-    hoja.getRange(24, 2).setValue('Paso');
-    hoja.getRange(24, 3, 1, 2).merge().setValue('Fase');
-    hoja.getRange(24, 5, 1, 3).merge().setValue('Micro-operación');
-    hoja.getRange(24, 8, 1, 7).merge().setValue('Detalle');
-    for (let f = 25; f <= 34; f++) {
+    hoja.getRange(27, 2).setValue('Paso');
+    hoja.getRange(27, 3, 1, 2).merge().setValue('Fase');
+    hoja.getRange(27, 5, 1, 3).merge().setValue('Micro-operación');
+    hoja.getRange(27, 8, 1, 7).merge().setValue('Detalle');
+    for (let f = 28; f <= 37; f++) {
       hoja.getRange(f, 3, 1, 2).merge();
       hoja.getRange(f, 5, 1, 3).merge();
       hoja.getRange(f, 8, 1, 7).merge();
     }
-    const cuerpo = hoja.getRange(25, 2, 10, 13);
+    const cuerpo = hoja.getRange(28, 2, 10, 13);
     cuerpo.setFontFamily('Roboto Mono').setFontSize(9).setBackground('#FFFFFF');
-    hoja.getRange(25, 2, 1, 13).setFontWeight('bold');
+    hoja.getRange(28, 2, 1, 13).setFontWeight('bold');
     hoja.getParent().setNamedRange(NOMBRES.PANEL_LOG, cuerpo);
   }
 };
