@@ -5,8 +5,10 @@ von Neumann de 8 bits, construido en **Google Sheets + Google Apps Script**.
 
 - **Materia:** Arquitectura de Computadoras (SIS-131) · Universidad Católica Boliviana "San Pablo", Santa Cruz
 - **Docente:** Ing. Paulo César Loayza Carrasco
-- **Estudiante:** Adrian Rada
-- **Evaluación:** Primer Parcial · Semestre 1/2026
+- **Estudiantes:**
+- Adrian Rada
+- Diego Andrade
+- Daniel Roca
 
 > 🔗 **Simulador:** [Abrir la hoja de cálculo](PEGA_AQUI_EL_ENLACE_DE_TU_HOJA) (solo lectura; para usarlo: *Archivo → Hacer una copia*)
 
