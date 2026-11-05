@@ -101,11 +101,25 @@ function suiteAccesoMemoria_() {
     });
 
     // ── Módulos stub ──
-    t.prueba('MMU.traducir: identidad con vpn, offset, pfn y presente = true', () => {
-      const r = MMU.traducir(0x85);
-      t.igual(r.vpn, 4); t.igual(r.offset, 5); t.igual(r.pfn, 4);
-      t.igual(r.dirFisica, 0x85); t.igual(r.presente, true);
+
+    t.prueba('MMU consulta la tabla de paginas real', () => {
+      // La pagina 4 no esta presente inicialmente.
+      const ausente = MMU.traducir(0x85);
+
+      t.igual(ausente.vpn, 4);
+      t.igual(ausente.offset, 5);
+      t.igual(ausente.presente, false);
+      t.igual(ausente.pfn, null);
+      t.igual(ausente.dirFisica, null);
+
+      // La pagina 15 esta fija en el marco 7.
+      const io = MMU.traducir(0x1F0);
+
+      t.igual(io.vpn, 15);
+      t.igual(io.pfn, 7);
+      t.igual(io.dirFisica, 0xF0);
     });
+
     t.prueba('MMU: rechaza direcciones fuera de 000h–1FFh y avisa que el fallo de página aún no existe', () => {
       t.lanzaError(() => MMU.traducir(0x200));
       t.lanzaError(() => MMU.traducir(-1));
