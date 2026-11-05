@@ -37,6 +37,11 @@ function suiteSimulacion_() {
       t.igual(fila[2], FASES.BUSQUEDA);
       t.igual(fila[3], 'MAR ← PC');
     });
+    t.prueba('el log muestra la micro-palabra y sus bits en cada paso', () => {
+      const fila = LogMicroops.leerFila(1);
+      t.igual(fila[5], 'En_PC · Ld_MAR');
+      t.igual(fila[6], '1001 0000 0000 0000 0000 0000 0000 00');
+    });
     t.prueba('resaltado: en MAR ← PC, MAR es destino y PC es origen', () => {
       t.igual(color(Resaltado.colorDe('MAR')), color(COLORES.ACTIVO));
       t.igual(color(Resaltado.colorDe('PC')), color(COLORES.ORIGEN));
