@@ -89,12 +89,88 @@ const UnidadControl = {
     let detalle;
     try {
       detalle = UnidadControl.ejecutarMicroop_(op, estado);
+    
     } catch (e) {
+      if (e.codigo === 'PAGE_FAULT') {
+
+        // La microoperacion no se completo.
+        // Volver a ponerla al inicio de la cola.
+        estado.cola.unshift(op);
+
+        let resultado;
+        try {
+          resultado = MMU.manejarFalloDePagina(e.vpn);
+        } catch (error) {
+          estado.detenido = true;
+          estado.cola = [];
+          Registros.escribirTexto('ESTADO', 'ERROR');
+          throw error;
+        }
+
+        // Atender el fallo cuenta como paso,
+        // pero NO incrementa el PC.
+        estado.paso++;
+
+        const descripcion = 'PAGE FAULT VPN ' + e.vpn;
+        const detalle = 'Swap -> PFN ' +
+          resultado.pfnAsignado +
+          ' | reintento pendiente';
+
+        Registros.escribirTexto(
+          'RELOJ', String(estado.paso)
+        );
+        Registros.escribirTexto('FASE', op.fase);
+        Registros.escribirTexto(
+          'MICROPASO', descripcion
+        );
+        Registros.escribirTexto(
+          'ESTADO', 'EJECUTANDO'
+        );
+
+        estado.historial.unshift({
+          paso: estado.paso,
+          fase: op.fase,
+          descripcion: descripcion,
+          detalle: detalle
+        });
+
+        if (estado.historial.length > TAMANO_HISTORIAL) {
+          estado.historial.length = TAMANO_HISTORIAL;
+        }
+
+        const evento = {
+          paso: estado.paso,
+          numeroInstruccion: estado.instrucciones,
+          direccionInstruccion: estado.dirInstruccion,
+          fase: op.fase,
+          microop: {
+            tipo: 'nada',
+            texto: descripcion
+          },
+          descripcion: descripcion,
+          detalle: detalle,
+          instruccion: estado.texto,
+          bus: null,
+          historial: estado.historial.slice(),
+          finInstruccion: false,
+          detenido: false,
+          falloPagina: true
+        };
+
+        UnidadControl.oyentes_.forEach(
+          fn => fn(evento)
+        );
+
+        return evento;
+      }
+
+      // Otros errores siguen deteniendo la CPU.
       estado.detenido = true;
       estado.cola = [];
       Registros.escribirTexto('ESTADO', 'ERROR');
       throw e;
     }
+
 
     estado.paso++;
     const descripcion = MicroOperaciones.describir(op);
