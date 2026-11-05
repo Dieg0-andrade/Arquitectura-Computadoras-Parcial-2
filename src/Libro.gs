@@ -38,7 +38,8 @@ function prepararLibro() {
   HOJAS.LOG,
   HOJAS.ISA,
   HOJAS.CACHE_IO,
-  HOJAS.SWAP
+  HOJAS.SWAP,
+  HOJAS.TABLA_MARCOS
 ];
   orden.forEach((nombre, i) => {
     let sh = ss.getSheetByName(nombre);
@@ -58,6 +59,9 @@ function prepararLibro() {
   Diseno.construirIsa(ss.getSheetByName(HOJAS.ISA));
   VistaCache.construir(ss.getSheetByName(HOJAS.CACHE_IO));
   Swap.construir(ss.getSheetByName(HOJAS.SWAP));
+  TablaMarcos.construir(
+    ss.getSheetByName(HOJAS.TABLA_MARCOS)
+  );
   ISA.escribirEnHoja();
 
   try {
