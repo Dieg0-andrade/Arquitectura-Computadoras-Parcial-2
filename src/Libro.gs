@@ -193,10 +193,10 @@ const Diseno = {
   construirLog(hoja) {
     Diseno.reiniciar(hoja);
     Diseno.titulo(hoja, 'A1', 'LOG DE MICRO-OPERACIONES');
-    hoja.getRange('A3:E3').setValues([['Paso', 'Instrucción', 'Fase', 'Micro-operación', 'Detalle']]);
-    Diseno.encabezado(hoja.getRange('A3:E3'));
-    hoja.getRange('A4:E1000').setFontFamily('Roboto Mono');
-    [80, 200, 120, 170, 320].forEach((w, i) => hoja.setColumnWidth(i + 1, w));
+    hoja.getRange('A3:G3').setValues([['Paso', 'Instrucción', 'Fase', 'Micro-operación', 'Detalle', 'Micro-palabra', 'Bits (30)']]);
+    Diseno.encabezado(hoja.getRange('A3:G3'));
+    hoja.getRange('A4:G1000').setFontFamily('Roboto Mono').setNumberFormat('@');
+    [80, 200, 120, 170, 320, 260, 290].forEach((w, i) => hoja.setColumnWidth(i + 1, w));
     hoja.setFrozenRows(3);
   },
 
