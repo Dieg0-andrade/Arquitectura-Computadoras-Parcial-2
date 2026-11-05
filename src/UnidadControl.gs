@@ -8,7 +8,13 @@
  *   ALMACENAMIENTO  escribe el resultado en el registro o en RAM[MAR]
  *
  * Cada llamada a UnidadControl.paso() ejecuta UNA micro-operación y avanza
- * el reloj. Como Apps Script no guarda variables entre llamadas, la cola de
+ * el reloj.
+ *
+ * Micro-palabra (tarea 1-6): antes de ejecutar cada micro-operación la UC
+ * emite su palabra de control (MicroPalabra.paraMicroOperacion) y la valida
+ * con Bus.estadoBuses: si dos buffers condujeran a la vez o la conexión no
+ * existe, el CPU se detiene con ERROR sin ejecutar el paso. El evento de cada
+ * paso trae la palabra, sus bits y el estado de los buses, y el log los muestra. Como Apps Script no guarda variables entre llamadas, la cola de
  * micro-operaciones pendientes se guarda en las propiedades del documento.
  *
  * API pública:
@@ -86,8 +92,10 @@ const UnidadControl = {
 
     const op = estado.cola.shift();
     estado.bus_ = null;
-    let detalle;
+    let detalle, palabra, buses;
     try {
+      palabra = UnidadControl.emitirPalabra_(op);
+      buses = Bus.estadoBuses(palabra);
       detalle = UnidadControl.ejecutarMicroop_(op, estado);
     } catch (e) {
       estado.detenido = true;
@@ -103,7 +111,8 @@ const UnidadControl = {
     Registros.escribirTexto('MICROPASO', descripcion);
     if (!estado.detenido) Registros.escribirTexto('ESTADO', 'EJECUTANDO');
 
-    estado.historial.unshift({ paso: estado.paso, fase: op.fase, descripcion: descripcion, detalle: detalle });
+    const textoPalabra = MicroPalabra.describir(palabra);
+    estado.historial.unshift({ paso: estado.paso, fase: op.fase, descripcion: descripcion, detalle: detalle, micropalabra: textoPalabra });
     if (estado.historial.length > TAMANO_HISTORIAL) estado.historial.length = TAMANO_HISTORIAL;
 
     const evento = {
@@ -116,6 +125,11 @@ const UnidadControl = {
       detalle: detalle,
       instruccion: estado.texto,
       bus: estado.bus_,
+      palabra: palabra,
+      micropalabra: textoPalabra,
+      micropalabraBits: MicroPalabra.aBinario(palabra),
+      buses: buses,
+      descripcionBuses: Bus.describirBuses(buses),
       historial: estado.historial.slice(),
       finInstruccion: estado.cola.length === 0,
       detenido: estado.detenido
@@ -140,6 +154,18 @@ const UnidadControl = {
 
   limpiarSuscriptores() {
     UnidadControl.oyentes_ = [];
+  },
+
+  /**
+   * Palabra de control que la UC emite para una micro-operación. El salto
+   * condicional solo activa En_MDR y Ld_PC si la bandera cumple la condición
+   * (las banderas no cambian dentro del paso); si no salta, la palabra es vacía.
+   */
+  emitirPalabra_(op) {
+    if (op.tipo === 'salto' && op.bandera && Registros.leerBanderas()[op.bandera] !== op.valor) {
+      return MicroPalabra.vacia();
+    }
+    return MicroPalabra.paraMicroOperacion(op);
   },
 
   // ── Ejecución de cada tipo de micro-operación ───────────────────
