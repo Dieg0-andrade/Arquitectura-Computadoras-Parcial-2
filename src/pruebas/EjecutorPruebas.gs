@@ -54,5 +54,5 @@ function mostrarReporte_(suites) {
 
 function probarTodo() {
   mostrarReporte_([suiteMemoria_(), suiteAccesoMemoria_(), suiteRegistros_(), suiteRegistrosGenerales_(), suiteALU_(), suiteISA_(), suiteMicroPalabra_(), suiteBus_(),
-    suiteEnsamblador_(), suiteUnidadControl_(), suiteSimulacion_(),suiteSwap_(), suiteTablaMarcos_(), suiteBorde_(), suiteCompilador_()]);
+    suiteEnsamblador_(), suiteUnidadControl_(), suiteSimulacion_(),suiteSwap_(), suiteTablaMarcos_(),suiteMMU_(), suiteBorde_(), suiteCompilador_()]);
 }
