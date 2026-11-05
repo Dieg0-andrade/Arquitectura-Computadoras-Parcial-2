@@ -120,11 +120,15 @@ function suiteAccesoMemoria_() {
       t.igual(io.dirFisica, 0xF0);
     });
 
-    t.prueba('MMU: rechaza direcciones fuera de 000h–1FFh y avisa que el fallo de página aún no existe', () => {
+    
+    t.prueba('MMU valida direcciones y VPN', () => {
       t.lanzaError(() => MMU.traducir(0x200));
       t.lanzaError(() => MMU.traducir(-1));
-      t.lanzaError(() => MMU.manejarFalloDePagina(3));
+      t.lanzaError(() => MMU.traducir(1.5));
+      t.lanzaError(() => MMU.manejarFalloDePagina(-1));
+      t.lanzaError(() => MMU.manejarFalloDePagina(16));
     });
+
     // La caché ya no es un stub (motor real del Integrante 3, issue #9): aquí solo
     // se comprueba el contrato; el comportamiento lo prueba su propia suite.
     t.prueba('Cache.acceder cumple el contrato {hit, nivel, valor} con write-through', () => {

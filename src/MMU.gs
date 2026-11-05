@@ -13,6 +13,24 @@
 
 const MMU = {
 
+
+  
+  CLAVE_VIRTUAL: 'MMU_VIRTUAL_ACTIVA',
+
+  activarMemoriaVirtual(activa) {
+    PropertiesService.getDocumentProperties()
+      .setProperty(
+        MMU.CLAVE_VIRTUAL,
+        activa ? '1' : '0'
+      );
+  },
+
+  estaActiva() {
+    return PropertiesService.getDocumentProperties()
+      .getProperty(MMU.CLAVE_VIRTUAL) === '1';
+  },
+
+
   /** Traduce una direccion virtual usando la tabla. */
   traducir(dirVirtual) {
     if (!Number.isInteger(dirVirtual) ||
@@ -143,9 +161,9 @@ const MMU = {
    * Pendiente: manejador real de Page Fault.
    * Se implementara en la tarea siguiente.
    */
+
   manejarFalloDePagina(vpn) {
-    throw new Error(
-      'Page Fault aun no implementado. VPN=' + vpn
-    );
+    return ManejadorFallos.resolver(vpn);
   }
+
 };

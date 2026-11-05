@@ -29,22 +29,72 @@
 
 const AccesoMemoria = {
 
-  /** Lee un byte. Devuelve { valor, info }. */
+
+  /** Lee un byte, traduciendo si el modo virtual esta activo. */
   leer(dirVirtual, tipo) {
     AccesoMemoria.validarTipo_(tipo);
     AccesoMemoria.validarDireccion_(dirVirtual);
-    const dirFisica = dirVirtual;               // STUB: sin traducción
-    const valor = Memoria.leer(dirFisica);      // STUB: sin caché
-    return { valor: valor, info: AccesoMemoria.info_(dirFisica) };
+
+    const r = AccesoMemoria.resolver_(dirVirtual);
+    const valor = Memoria.leer(r.dirFisica);
+
+    return {
+      valor: valor,
+      info: {
+        vpn: r.vpn,
+        pfn: r.pfn,
+        dirFisica: r.dirFisica,
+        fallo: false,
+        hitL1: null,
+        hitL2: null
+      }
+    };
   },
 
-  /** Escribe un byte. Devuelve { info }. Las escrituras son siempre de datos. */
+  /** Escribe un byte en la direccion fisica traducida. */
   escribir(dirVirtual, valor) {
     AccesoMemoria.validarDireccion_(dirVirtual);
     UtilMemoria.validarByte(valor);
-    const dirFisica = dirVirtual;               // STUB: sin traducción
-    Memoria.escribir(dirFisica, valor);         // STUB: sin caché
-    return { info: AccesoMemoria.info_(dirFisica) };
+
+    const r = AccesoMemoria.resolver_(dirVirtual);
+    Memoria.escribir(r.dirFisica, valor);
+
+    return {
+      info: {
+        vpn: r.vpn,
+        pfn: r.pfn,
+        dirFisica: r.dirFisica,
+        fallo: false,
+        hitL1: null,
+        hitL2: null
+      }
+    };
+  },
+
+  /** Lanza un fallo recuperable cuando P = 0. */
+  resolver_(dirVirtual) {
+    if (!MMU.estaActiva()) {
+      return {
+        vpn: dirVirtual >> 5,
+        pfn: dirVirtual >> 5,
+        dirFisica: dirVirtual,
+        presente: true
+      };
+    }
+
+    const r = MMU.traducir(dirVirtual);
+
+    if (!r.presente) {
+      const error = new Error(
+        'PAGE FAULT: VPN ' + r.vpn
+      );
+
+      error.codigo = 'PAGE_FAULT';
+      error.vpn = r.vpn;
+      throw error;
+    }
+
+    return r;
   },
 
   // ── Internos ────────────────────────────────────────────────────
@@ -61,10 +111,18 @@ const AccesoMemoria = {
     }
   },
 
+
   validarDireccion_(dirVirtual) {
-    // STUB: hasta la tarea 2-4 solo existe la RAM de 256 bytes (00h–FFh).
-    if (!Number.isInteger(dirVirtual) || dirVirtual < 0 || dirVirtual > MAPA_MEMORIA.DATOS_FIN) {
-      throw new Error('Dirección fuera de rango: ' + dirVirtual + ' (válido 00h–FFh hasta que llegue la memoria virtual)');
+    const maximo = MMU.estaActiva()
+      ? 0x1FF
+      : MAPA_MEMORIA.DATOS_FIN;
+
+    if (!Number.isInteger(dirVirtual) ||
+        dirVirtual < 0 || dirVirtual > maximo) {
+      throw new Error(
+        'Direccion fuera de rango: ' + dirVirtual
+      );
     }
   }
+
 };
