@@ -122,11 +122,11 @@ function suiteMicroPalabra_() {
     t.igual(cadena(MicroPalabra.paraMicroOperacion({ tipo: 'bus', origen: 'MDR', destino: 'RAM' })), 'Mem_W · En_MDR');
     t.igual(cadena(MicroPalabra.paraMicroOperacion({ tipo: 'salto', bandera: 'ZF', valor: 1 })), 'Ld_PC · En_MDR');
   });
-  t.prueba('E/S: IN desde el teclado y OUT al LCD usan IO', () => {
-    const entrada = MicroPalabra.paraMicroOperacion({ tipo: 'bus', origen: 'KBD', destino: 'AX' });
-    const salida = MicroPalabra.paraMicroOperacion({ tipo: 'bus', origen: 'DX', destino: 'LCD' });
-    t.igual(cadena(entrada), 'Mem_R · Ld_AX · En_KBD · IO');
-    t.igual(cadena(salida), 'Mem_W · En_DX · Ld_LCD · IO');
+  t.prueba('E/S: MDR ← KBD (IN) y LCD ← MDR (OUT) usan IO', () => {
+    const entrada = MicroPalabra.paraMicroOperacion({ tipo: 'bus', origen: 'KBD', destino: 'MDR' });
+    const salida = MicroPalabra.paraMicroOperacion({ tipo: 'bus', origen: 'MDR', destino: 'LCD' });
+    t.igual(cadena(entrada), 'Mem_R · Ld_MDR · En_KBD · IO');
+    t.igual(cadena(salida), 'Mem_W · En_MDR · Ld_LCD · IO');
     t.igual(MicroPalabra.validar(entrada), true);
     t.igual(MicroPalabra.validar(salida), true);
   });

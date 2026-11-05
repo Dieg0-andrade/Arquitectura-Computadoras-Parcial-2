@@ -106,8 +106,12 @@ Paso 1 en bits: `1001 0000 0000 0000 0000 0000 0000 00`.
 
 | Instrucción | Micro-operación | Señales en 1 |
 |---|---|---|
-| `IN AX, [KBD]` | `AX ← KBD` | `IO`, `Mem_R`, `En_KBD`, `Ld_AX` |
-| `OUT [LCD], DX` | `LCD ← DX` | `IO`, `Mem_W`, `En_DX`, `Ld_LCD` |
+| `IN AX, [KBD]` | 1. `MDR ← KBD` | `IO`, `Mem_R`, `En_KBD`, `Ld_MDR` |
+| | 2. `AX ← MDR` | `En_MDR`, `Ld_AX` |
+| `OUT [LCD], DX` | 1. `MDR ← DX` | `En_DX`, `Ld_MDR` |
+| | 2. `LCD ← MDR` | `IO`, `Mem_W`, `En_MDR`, `Ld_LCD` |
+
+El teclado y el LCD están en el bus de datos **externo**, igual que la RAM, así que el dato siempre pasa por el MDR (ver `docs/buses.md`). `Bus.estadoBuses` rechaza `AX ← KBD` o `LCD ← DX` en un solo paso.
 
 ### Ejemplo de error
 
@@ -137,7 +141,7 @@ Constantes: `SENALES_MICROPALABRA` (26 señales), `COLUMNAS_MICROPALABRA` (30 co
 
 ## 5. Qué usa esto después
 
-- **1-5 (`Bus.gs`):** `Bus.estadoBuffers(palabra)` marca `CONDUCE` el componente del `En_*` activo y `HIGH-Z` el resto.
+- **1-5 (`Bus.gs`, hecho):** `Bus.estadoBuffers(palabra)` marca `CONDUCE` el componente del `En_*` activo y `HIGH-Z` el resto. Detalle en `docs/buses.md`.
 - **1-6 (`UnidadControl.gs`):** cada micro-operación genera su palabra con `paraMicroOperacion`, se valida con `validar` y se imprime en el log con `describir` / `aBinario`.
 - **1-7 (`VistaBuses.gs`):** fila de 30 celdas 0/1 con `COLUMNAS_MICROPALABRA` como encabezado.
 - **3-5 / 3-6 / 3-7 (Integrante 3):** `En_KBD`, `Ld_LCD` e `IO` ya están reservadas en la palabra.

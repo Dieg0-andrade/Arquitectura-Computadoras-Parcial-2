@@ -111,17 +111,25 @@ function suiteAccesoMemoria_() {
       t.lanzaError(() => MMU.traducir(-1));
       t.lanzaError(() => MMU.manejarFalloDePagina(3));
     });
-    t.prueba('Cache.acceder: lee y escribe directo en la RAM (nivel RAM, hit = false)', () => {
+    // La caché ya no es un stub (motor real del Integrante 3, issue #9): aquí solo
+    // se comprueba el contrato; el comportamiento lo prueba su propia suite.
+    t.prueba('Cache.acceder cumple el contrato {hit, nivel, valor} con write-through', () => {
+      Cache.reiniciar();
       const w = Cache.acceder('D', 0x30, true, 0x77);
-      t.igual(w.nivel, 'RAM'); t.igual(w.hit, false);
+      t.igual(typeof w.hit, 'boolean');
+      t.igual(['L1', 'L2', 'RAM'].indexOf(w.nivel) >= 0, true);
+      t.igual(Memoria.leer(0x30), 0x77);
       const r = Cache.acceder('I', 0x30, false);
-      t.igual(r.valor, 0x77); t.igual(r.nivel, 'RAM');
+      t.igual(r.valor, 0x77);
       t.lanzaError(() => Cache.acceder('X', 0, false));
+      Cache.reiniciar();
     });
-    t.prueba('Cache.contadores e invalidarPagina existen y no hacen nada', () => {
+    t.prueba('Cache.contadores devuelve h/m por nivel e invalidarPagina valida el PFN', () => {
+      Cache.reiniciar();
       const c = Cache.contadores();
       ['L1I', 'L1D', 'L2'].forEach(n => { t.igual(c[n].h, 0); t.igual(c[n].m, 0); });
       Cache.invalidarPagina(3);
+      t.lanzaError(() => Cache.invalidarPagina(8));
     });
     t.prueba('Perifericos.teclado: cola vacía de 8 bytes', () => {
       t.igual(Perifericos.teclado.encolar('A'), false);
