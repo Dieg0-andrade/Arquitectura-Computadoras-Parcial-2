@@ -13,7 +13,8 @@ const HOJAS = {
   LOG: 'Log',
   ISA: 'ISA',
   CACHE_IO: 'Cache_IO',
-  SWAP: 'Swap'
+  SWAP: 'Swap',
+  TABLA_MARCOS: 'TablaMarcos'
 };
 
 /** Mapa de memoria (espacio de direcciones de 8 bits: 00h–FFh). */
