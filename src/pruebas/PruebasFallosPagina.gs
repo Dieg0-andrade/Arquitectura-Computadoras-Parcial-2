@@ -34,6 +34,13 @@ const politicaAnterior = ManejadorFallos.politica();
   const rangoColores = hojaTabla.getRange(4, 2, 16, 4);
   const respaldoColores = rangoColores.getBackgrounds();
 
+  
+  const contadores = hojaTabla.getRange('H23:H25');
+  const respaldoContadores = contadores.getValues();
+  const coloresRam = UtilMemoria.rangoMatriz();
+  const respaldoColoresRam = coloresRam.getBackgrounds();
+
+
   function limpiarEscenario() {
     const filas = [];
 
@@ -144,7 +151,7 @@ const politicaAnterior = ManejadorFallos.politica();
 
       t.igual(
         hojaTabla.getRange('B6').getBackground(),
-        '#fff59d'
+        '#ffcdd2'
       );
     });
 
@@ -214,6 +221,9 @@ const politicaAnterior = ManejadorFallos.politica();
       .setValues(respaldoLog);
 
     rangoColores.setBackgrounds(respaldoColores);
+
+    contadores.setValues(respaldoContadores);
+    coloresRam.setBackgrounds(respaldoColoresRam);
 
     Cache.reiniciar();
     UnidadControl.reiniciar();
