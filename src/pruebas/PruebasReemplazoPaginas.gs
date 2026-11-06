@@ -31,6 +31,12 @@ function suiteReemplazoPaginas_() {
   const colores = hojaTabla.getRange(4, 2, 16, 4);
   const respaldoColores = colores.getBackgrounds();
 
+    const contadores = hojaTabla.getRange('H23:H25');
+  const respaldoContadores = contadores.getValues();
+
+  const coloresRam = UtilMemoria.rangoMatriz();
+  const respaldoColoresRam = coloresRam.getBackgrounds();
+
   const politicaAnterior = ManejadorFallos.politica();
   const cacheAnterior = Cache.cargarEstado_();
   const modoAnterior = MMU.estaActiva();
@@ -212,6 +218,9 @@ function suiteReemplazoPaginas_() {
     panel.setValues(respaldoPanel);
     log.setValues(respaldoLog);
     colores.setBackgrounds(respaldoColores);
+
+    contadores.setValues(respaldoContadores);
+    coloresRam.setBackgrounds(respaldoColoresRam);
 
     Cache.guardarEstado_(cacheAnterior);
 

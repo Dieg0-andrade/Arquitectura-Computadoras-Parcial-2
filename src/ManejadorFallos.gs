@@ -11,13 +11,20 @@
 const ManejadorFallos = {
   CLAVE_ESTADO: 'SIM_REEMPLAZO_PAGINAS_V1',
 
+  
   estadoInicial_() {
     return {
       reloj: 0,
       cargas: {},
-      accesos: {}
+      accesos: {},
+      fallos: 0,
+      desalojos: 0,
+      ultimaVPN: null,
+      ultimoMarco: null,
+      ultimaVictima: null
     };
   },
+
 
   cargarEstado_() {
     const texto = PropertiesService.getDocumentProperties()
@@ -31,6 +38,31 @@ const ManejadorFallos = {
           !Number.isInteger(estado.reloj)) {
         return ManejadorFallos.estadoInicial_();
       }
+
+      
+      // Compatibilidad con estados guardados anteriormente.
+      if (!Number.isInteger(estado.fallos)) {
+        estado.fallos = 0;
+      }
+
+      if (!Number.isInteger(estado.desalojos)) {
+        estado.desalojos = 0;
+      }
+
+      if (estado.ultimaVPN === undefined) {
+        estado.ultimaVPN = null;
+      }
+
+      if (estado.ultimoMarco === undefined) {
+        estado.ultimoMarco = null;
+      }
+
+      if (estado.ultimaVictima === undefined) {
+        estado.ultimaVictima = null;
+      }
+
+      
+      
       return estado;
     } catch (e) {
       return ManejadorFallos.estadoInicial_();
@@ -46,16 +78,53 @@ const ManejadorFallos = {
   },
 
   /** Limpia el historial y vuelve a FIFO. */
+  
   reiniciar() {
     ManejadorFallos.guardarEstado_(
       ManejadorFallos.estadoInicial_()
     );
 
-    const hoja = SpreadsheetApp.getActive()
+    const ss = SpreadsheetApp.getActive();
+    const tabla = ss.getSheetByName(HOJAS.TABLA_MARCOS);
+
+    if (tabla) {
+      tabla.getRange('H20').setValue('FIFO');
+
+      // Limpiar los contadores.
+      tabla.getRange('H23:H25').setValues([
+        [0],
+        [0],
+        ['—']
+      ]);
+
+      // Quitar resaltados de fallos anteriores.
+      tabla.getRange(4, 2, 15, 4)
+        .setBackground('#FFFFFF');
+    }
+
+    // Restaurar los colores normales de la RAM.
+    if (ss.getSheetByName(HOJAS.RAM)) {
+      VistaRam.pintarSegmentos();
+    }
+  },
+
+  mostrarContadores_(estado) {
+    const tabla = SpreadsheetApp.getActive()
       .getSheetByName(HOJAS.TABLA_MARCOS);
 
-    if (hoja) hoja.getRange('H20').setValue('FIFO');
+    if (!tabla) return;
+
+    tabla.getRange('H23:H25').setValues([
+      [estado.fallos],
+      [estado.desalojos],
+      [
+        estado.ultimoMarco === null
+          ? '—'
+          : 'PFN ' + estado.ultimoMarco
+      ]
+    ]);
   },
+
 
   /** Lee la politica seleccionada en la hoja. */
   politica() {
@@ -197,6 +266,54 @@ const ManejadorFallos = {
       };
     }
 
+    
+    // Visualizacion por etapas del Page Fault.
+    const ssVisual = SpreadsheetApp.getActive();
+    const tablaVisual = ssVisual.getSheetByName(
+      HOJAS.TABLA_MARCOS
+    );
+    const ramVisual = ssVisual.getSheetByName(
+      HOJAS.RAM
+    );
+
+    const anterior = ManejadorFallos.cargarEstado_();
+
+    // Restaurar los resaltados del fallo anterior.
+    if (Number.isInteger(anterior.ultimaVPN)) {
+      tablaVisual.getRange(
+        4 + anterior.ultimaVPN, 2, 1, 4
+      ).setBackground('#FFFFFF');
+    }
+
+    if (Number.isInteger(anterior.ultimaVictima)) {
+      tablaVisual.getRange(
+        4 + anterior.ultimaVictima, 2, 1, 4
+      ).setBackground('#FFFFFF');
+    }
+
+    if (Number.isInteger(anterior.ultimoMarco)) {
+      const pfnAnterior = anterior.ultimoMarco;
+
+      const colorNormal = pfnAnterior % 2 === 0
+        ? COLORES.SEG_CODIGO
+        : COLORES.SEG_DATOS;
+
+      ramVisual.getRange(
+        MATRIZ_RAM.PRIMERA_FILA + pfnAnterior * 2,
+        MATRIZ_RAM.PRIMERA_COL,
+        2,
+        16
+      ).setBackground(colorNormal);
+    }
+
+    // Etapa 1: mostrar la pagina que falta.
+    tablaVisual.getRange(
+      4 + vpn, 2, 1, 4
+    ).setBackground('#FFCDD2');
+
+    SpreadsheetApp.flush();
+    Utilities.sleep(160);
+
     // Leer la pagina solicitada antes de desalojar.
     const bytes = Swap.leerPagina(vpn);
 
@@ -279,19 +396,45 @@ const ManejadorFallos = {
       ref: 0
     });
 
+    
     ManejadorFallos.registrarCarga(vpn);
 
-    // Panel visual del Page Fault.
-    const ss = SpreadsheetApp.getActive();
-    const tabla = ss.getSheetByName(HOJAS.TABLA_MARCOS);
+    // Un Page Fault se cuenta cuando la carga termina.
+    const estadoFinal = ManejadorFallos.cargarEstado_();
 
-    tabla.getRange(4 + vpn, 2, 1, 4)
-      .setBackground('#FFF59D');
+    estadoFinal.fallos++;
 
     if (victima !== null) {
-      tabla.getRange(4 + victima, 2, 1, 4)
-        .setBackground('#FFCDD2');
+      estadoFinal.desalojos++;
     }
+
+    estadoFinal.ultimaVPN = vpn;
+    estadoFinal.ultimoMarco = marco;
+    estadoFinal.ultimaVictima = victima;
+
+    ManejadorFallos.guardarEstado_(estadoFinal);
+    ManejadorFallos.mostrarContadores_(estadoFinal);
+
+    // Etapa 2: resaltar el marco donde llego la pagina.
+    ramVisual.getRange(
+      MATRIZ_RAM.PRIMERA_FILA + marco * 2,
+      MATRIZ_RAM.PRIMERA_COL,
+      2,
+      16
+    ).setBackground(COLORES.ACTIVO);
+
+    // La victima queda identificada en naranja.
+    const tabla = tablaVisual;
+
+    if (victima !== null) {
+      tabla.getRange(
+        4 + victima, 2, 1, 4
+      ).setBackground('#FFE0B2');
+    }
+
+    SpreadsheetApp.flush();
+
+
 
     tabla.getRange('G16:H18').setValues([
       ['PAGE FAULT', 'VPN ' + vpn],
@@ -302,7 +445,7 @@ const ManejadorFallos = {
     ]);
 
     // Registro del reemplazo.
-    const log = ss.getSheetByName(HOJAS.LOG);
+    const log = ssVisual.getSheetByName(HOJAS.LOG);
 
     log.getRange('G16:J16').setValues([[
       'Evento', 'VPN', 'PFN', 'Resultado'

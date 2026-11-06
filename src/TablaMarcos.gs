@@ -109,6 +109,32 @@ const TablaMarcos = {
 
     selector.setDataValidation(validacion);
 
+    
+    // Panel de contadores del Issue #17.
+    hoja.getRange('G22:H22').setValues([[
+      'ESTADISTICAS DE MEMORIA', 'VALOR'
+    ]]);
+
+    Diseno.encabezado(
+      hoja.getRange('G22:H22')
+    );
+
+    hoja.getRange('G23:H25').setValues([
+      ['Page Faults', 0],
+      ['Desalojos', 0],
+      ['Ultimo marco', '—']
+    ]);
+
+    hoja.getRange('H23:H24')
+      .setFontWeight('bold')
+      .setHorizontalAlignment('center');
+
+    hoja.getRange('G23:H25')
+      .setBorder(
+        true, true, true, true, true, true
+      );
+
+
 
     hoja.setColumnWidths(1, 5, 110);
     hoja.setColumnWidth(7, 260);
