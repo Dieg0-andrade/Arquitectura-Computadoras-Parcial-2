@@ -176,6 +176,9 @@ const Bus = {
    * `palabra` y `buses` son null para 'INM' (constante que pone la UC, sin buffer).
    */
   transferir(origen, destino, inmediato, acceso) {
+    if (origen === 'KBD' && destino !== 'MDR') {
+      throw new Error('El teclado solo entrega datos al MDR');
+    }
     if (origen === destino) throw new Error('Origen y destino iguales: ' + origen);
     if (destino === 'INM') throw new Error('INM no puede ser destino');
 
@@ -231,6 +234,7 @@ const Bus = {
       UtilMemoria.validarByte(inmediato);
       return inmediato;
     }
+    if (origen === 'KBD') return Perifericos.teclado.desencolar();
     if (origen === 'RAM') return AccesoMemoria.leer(direccion, tipoAcceso).valor;
     if (Registros.esRegistro(origen)) return Registros.leer(origen);
     throw new Error('Origen de bus desconocido: ' + origen);

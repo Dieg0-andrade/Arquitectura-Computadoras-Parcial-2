@@ -63,6 +63,7 @@ function prepararLibro() {
     ss.getSheetByName(HOJAS.TABLA_MARCOS)
   );
   ManejadorFallos.reiniciar();
+  Perifericos.teclado.reiniciar();
   ISA.escribirEnHoja();
 
   try {

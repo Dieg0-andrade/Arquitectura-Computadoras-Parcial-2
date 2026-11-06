@@ -172,13 +172,8 @@ function suiteAccesoMemoria_() {
       t.lanzaError(() => Cache.invalidarPagina(8));
     });
 
-    t.prueba('Perifericos.teclado: cola vacía de 8 bytes', () => {
-      t.igual(Perifericos.teclado.encolar('A'), false);
-      t.igual(Perifericos.teclado.desencolar(), 0);
-
-      const e = Perifericos.teclado.estado();
-      t.igual(e.capacidad, 8);
-      t.igual(e.longitud, 0);
+    t.prueba('Perifericos.teclado: FIFO, panel y bus En_KBD', () => {
+      probarTecladoFIFO();
     });
 
     t.prueba('Perifericos.lcd: pantalla de 8 caracteres y posiciones 0–7', () => {
