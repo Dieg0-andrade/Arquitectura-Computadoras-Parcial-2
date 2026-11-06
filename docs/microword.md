@@ -142,6 +142,6 @@ Constantes: `SENALES_MICROPALABRA` (26 señales), `COLUMNAS_MICROPALABRA` (30 co
 ## 5. Qué usa esto después
 
 - **1-5 (`Bus.gs`, hecho):** `Bus.estadoBuffers(palabra)` marca `CONDUCE` el componente del `En_*` activo y `HIGH-Z` el resto. Detalle en `docs/buses.md`.
-- **1-6 (`UnidadControl.gs`):** cada micro-operación genera su palabra con `paraMicroOperacion`, se valida con `validar` y se imprime en el log con `describir` / `aBinario`.
+- **1-6 (`UnidadControl.gs`, hecho):** antes de cada micro-paso la UC emite la palabra (`paraMicroOperacion`; un salto no tomado emite la palabra vacía), la valida con `Bus.estadoBuses` y, si es inválida, detiene el CPU con `ERROR` sin ejecutar el paso. La hoja **Log** muestra la palabra (`describir`) y sus 30 bits (`aBinario`) en las columnas F y G; el evento de cada paso trae `palabra`, `micropalabra`, `micropalabraBits`, `buses` y `descripcionBuses`.
 - **1-7 (`VistaBuses.gs`):** fila de 30 celdas 0/1 con `COLUMNAS_MICROPALABRA` como encabezado.
 - **3-5 / 3-6 / 3-7 (Integrante 3):** `En_KBD`, `Ld_LCD` e `IO` ya están reservadas en la palabra.

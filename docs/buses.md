@@ -86,6 +86,6 @@ Constantes: `CONDUCE`, `HIGH_Z`, `SEGMENTO_INTERNO`, `SEGMENTO_EXTERNO`, `BUFFER
 
 ## 6. Qué sigue
 
-- **1-6:** la unidad de control imprime en el log la micro-palabra y `describirBuses` de cada paso.
+- **1-6 (hecho):** la unidad de control valida con `Bus.estadoBuses` la micro-palabra de cada paso antes de ejecutarlo; el evento trae `buses` y `descripcionBuses`, y la hoja Log muestra la palabra y sus bits.
 - **1-7:** `VistaBuses.gs` pinta `BUFFERS_BUS` en verde (CONDUCE) o gris (HIGH-Z) con `estadoBuffers`.
 - **3-7 (Integrante 3):** IN y OUT usan dos pasos a través del MDR (`docs/microword.md`, sección E/S).

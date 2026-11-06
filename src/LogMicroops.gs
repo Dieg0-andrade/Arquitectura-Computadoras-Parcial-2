@@ -3,7 +3,9 @@
  * Log cronológico de micro-operaciones.
  *
  *   - Hoja Log: una fila por micro-operación (Paso, Instrucción, Fase,
- *     Micro-operación, Detalle), en orden. La fila del paso N es la 3 + N.
+ *     Micro-operación, Detalle, Micro-palabra, Bits), en orden. La fila del
+ *     paso N es la 3 + N. Las dos últimas columnas son la palabra de control
+ *     que emitió la Unidad de Control en ese paso (tarea 1-6).
  *   - Hoja CPU: panel con las últimas 10 micro-operaciones, la más reciente arriba.
  *
  * Las filas se acumulan en memoria con agregar() y se escriben todas juntas
@@ -12,6 +14,7 @@
  */
 
 const FILA_INICIO_LOG = 4;
+const COLUMNAS_LOG = 7;
 
 const LogMicroops = {
 
@@ -26,7 +29,9 @@ const LogMicroops = {
         '#' + evento.numeroInstruccion + ' ' + (evento.instruccion || ''),
         evento.fase,
         evento.descripcion,
-        evento.detalle || ''
+        evento.detalle || '',
+        evento.micropalabra || '',
+        evento.micropalabraBits || ''
       ]
     });
   },
@@ -43,7 +48,7 @@ const LogMicroops = {
     if (filaFinal > hoja.getMaxRows()) {
       hoja.insertRowsAfter(hoja.getMaxRows(), filaFinal - hoja.getMaxRows() + 100);
     }
-    hoja.getRange(filaInicial, 1, pendientes.length, 5).setValues(pendientes.map(p => p.fila));
+    hoja.getRange(filaInicial, 1, pendientes.length, COLUMNAS_LOG).setValues(pendientes.map(p => p.fila));
   },
 
   /** Muestra en la hoja CPU las últimas micro-operaciones (la más reciente arriba). */
@@ -71,13 +76,13 @@ const LogMicroops = {
     LogMicroops.pendientes_ = [];
     const hoja = SpreadsheetApp.getActive().getSheetByName(HOJAS.LOG);
     const filas = hoja.getMaxRows() - FILA_INICIO_LOG + 1;
-    if (filas > 0) hoja.getRange(FILA_INICIO_LOG, 1, filas, 5).clearContent();
+    if (filas > 0) hoja.getRange(FILA_INICIO_LOG, 1, filas, COLUMNAS_LOG).clearContent();
     LogMicroops.escribirPanel([]);
   },
 
   /** Lee una fila del log (1 = primer paso). Útil para las pruebas. */
   leerFila(paso) {
     const hoja = SpreadsheetApp.getActive().getSheetByName(HOJAS.LOG);
-    return hoja.getRange(FILA_INICIO_LOG - 1 + paso, 1, 1, 5).getDisplayValues()[0];
+    return hoja.getRange(FILA_INICIO_LOG - 1 + paso, 1, 1, COLUMNAS_LOG).getDisplayValues()[0];
   }
 };

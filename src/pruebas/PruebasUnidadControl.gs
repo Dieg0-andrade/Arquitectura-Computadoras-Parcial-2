@@ -84,6 +84,78 @@ function suiteUnidadControl_() {
       t.igual(Memoria.leer(0x82), 8);
       t.igual(Memoria.leer(0x81), 0);
     });
+    // ── Micro-palabra emitida por la UC (tarea 1-6) ──
+    t.prueba('MicroOperaciones.palabraDeControl: una palabra por micro-operación en las 4 fases', () => {
+      const ops = MicroOperaciones.busqueda().concat(MicroOperaciones.planificar(ISA.porOpcode(0x10)));
+      const fases = new Set(ops.map(op => op.fase));
+      t.igual(fases.size, 4);
+      ops.forEach(op => t.igual(Array.isArray(MicroPalabra.aBits(MicroOperaciones.palabraDeControl(op))), true));
+      const salto = { fase: FASES.EJECUCION, tipo: 'salto', bandera: 'ZF', valor: 1 };
+      t.igual(MicroPalabra.describir(MicroOperaciones.palabraDeControl(salto, { ZF: 1 })), 'Ld_PC · En_MDR');
+      t.igual(MicroPalabra.describir(MicroOperaciones.palabraDeControl(salto, { ZF: 0 })), '(ninguna)');
+    });
+    t.prueba('micro-palabra: la búsqueda emite las 4 palabras de la guía', () => {
+      cargar(['MOV AX, 5', 'HLT']);
+      const palabras = [];
+      for (let i = 0; i < 5; i++) palabras.push(UnidadControl.paso().micropalabra);
+      t.igual(palabras.join(' | '), 'En_PC · Ld_MAR | Mem_R · Ld_MDR · En_RAM | En_MDR · Ld_IR | Inc_PC | (ninguna)');
+    });
+    t.prueba('micro-palabra: cada evento trae palabra, bits y estado de los buses', () => {
+      cargar(['MOV AX, 5', 'HLT']);
+      const ev = UnidadControl.paso();
+      t.igual(MicroPalabra.leer(ev.palabra, 'En_PC'), 1);
+      t.igual(ev.micropalabraBits, '1001 0000 0000 0000 0000 0000 0000 00');
+      t.igual(ev.buses.buffers.PC, CONDUCE);
+      t.igual(ev.buses.buffers.MDR, HIGH_Z);
+      t.igual(ev.descripcionBuses.indexOf('Bus interno: PC → MAR'), 0);
+      t.igual(ev.historial[0].micropalabra, 'En_PC · Ld_MAR');
+    });
+    t.prueba('micro-palabra: la ALU emite ALU_op y Ld_FLAGS', () => {
+      cargar(['MOV CX, 2', 'ADD CX, 3', 'HLT']);
+      const vistas = [];
+      UnidadControl.suscribir(e => vistas.push(e.micropalabra));
+      UnidadControl.ejecutarHastaDetener();
+      UnidadControl.limpiarSuscriptores();
+      t.igual(vistas.indexOf('Ld_FLAGS · ALU_op=ADD') >= 0, true);
+      t.igual(vistas.indexOf('En_ALU · Ld_CX') >= 0, true);
+      t.igual(Registros.leer('CX'), 5);
+    });
+    t.prueba('micro-palabra: salto tomado activa Ld_PC; salto no tomado no activa nada', () => {
+      const saltos = [];
+      UnidadControl.suscribir(e => { if (e.microop.tipo === 'salto') saltos.push(e.micropalabra); });
+      cargar(['MOV AX, 1', 'CMP AX, 1', 'JZ fin', 'MOV BX, 9', 'fin: HLT']);
+      UnidadControl.ejecutarHastaDetener();
+      cargar(['MOV AX, 1', 'CMP AX, 2', 'JZ fin', 'MOV BX, 9', 'fin: HLT']);
+      UnidadControl.ejecutarHastaDetener();
+      UnidadControl.limpiarSuscriptores();
+      t.igual(saltos.join(' | '), 'Ld_PC · En_MDR | (ninguna)');
+    });
+    t.prueba('micro-palabra: un programa con los 4 registros nunca tiene dos emisores', () => {
+      cargar(['.data', 'x DB 4', 'y DB 0', '.code', 'LOAD CX, [x]', 'MOV DX, 0', 'vuelta: ADD DX, 2',
+        'MOV AX, DX', 'MOV BX, AX', 'DEC CX', 'JNZ vuelta', 'STORE [y], DX', 'HLT']);
+      let pasos = 0, maxEmisores = 0;
+      UnidadControl.suscribir(e => {
+        pasos++;
+        maxEmisores = Math.max(maxEmisores, MicroPalabra.emisores(e.palabra).length);
+      });
+      UnidadControl.ejecutarHastaDetener();
+      UnidadControl.limpiarSuscriptores();
+      t.igual(Memoria.leer(0x81), 8);
+      t.igual(pasos > 50, true);
+      t.igual(maxEmisores, 1);
+    });
+    t.prueba('micro-palabra inválida (AX ← RAM sin MDR) detiene el CPU con ERROR sin ejecutar el paso', () => {
+      cargar(['HLT']);
+      Registros.escribir('AX', 0x11);
+      PropertiesService.getDocumentProperties().setProperty(CLAVE_ESTADO_UC, JSON.stringify({
+        cola: [{ fase: FASES.EJECUCION, tipo: 'bus', origen: 'RAM', destino: 'AX', acceso: 'D' }]
+      }));
+      let mensaje = '';
+      try { UnidadControl.paso(); } catch (e) { mensaje = e.message; }
+      t.igual(/MDR/.test(mensaje), true);
+      t.igual(Registros.leerTexto('ESTADO'), 'ERROR');
+      t.igual(Registros.leer('AX'), 0x11);
+    });
     t.prueba('opcode inválido detiene el CPU con estado ERROR', () => {
       Memoria.cargar(0, [0xFF]);
       UnidadControl.reiniciar();
@@ -91,6 +163,7 @@ function suiteUnidadControl_() {
       t.igual(Registros.leerTexto('ESTADO'), 'ERROR');
     });
   } finally {
+    UnidadControl.limpiarSuscriptores();
     UtilMemoria.rangoMatriz().setValues(UtilMemoria.aMatriz(respaldoRam));
     UnidadControl.reiniciar();
   }
