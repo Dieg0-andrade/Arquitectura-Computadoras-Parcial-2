@@ -157,15 +157,13 @@ const UnidadControl = {
   },
 
   /**
-   * Palabra de control que la UC emite para una micro-operación. El salto
-   * condicional solo activa En_MDR y Ld_PC si la bandera cumple la condición
-   * (las banderas no cambian dentro del paso); si no salta, la palabra es vacía.
+   * Palabra de control que la UC emite para una micro-operación (la define
+   * MicroOperaciones.palabraDeControl). Las banderas no cambian dentro del
+   * paso, así que se leen antes de ejecutarlo para decidir si el salto se toma.
    */
   emitirPalabra_(op) {
-    if (op.tipo === 'salto' && op.bandera && Registros.leerBanderas()[op.bandera] !== op.valor) {
-      return MicroPalabra.vacia();
-    }
-    return MicroPalabra.paraMicroOperacion(op);
+    const banderas = op.tipo === 'salto' ? Registros.leerBanderas() : null;
+    return MicroOperaciones.palabraDeControl(op, banderas);
   },
 
   // ── Ejecución de cada tipo de micro-operación ───────────────────

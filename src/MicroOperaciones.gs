@@ -16,6 +16,9 @@
  *   { fase, tipo: 'nada',   texto }              ->  la fase no hace nada
  *
  * Fases: BÚSQUEDA, DECODIFICACIÓN, EJECUCIÓN, ALMACENAMIENTO.
+ *
+ * Cada micro-operación tiene su palabra de control (tarea 1-6, ver
+ * docs/microword.md): MicroOperaciones.palabraDeControl(op, banderas).
  */
 
 const FASES = {
@@ -108,6 +111,23 @@ const MicroOperaciones = {
     if (m === 'JNZ') { ops.push({ fase: E, tipo: 'salto', bandera: 'ZF', valor: 0 }); return ops; }
 
     throw new Error('Instrucción sin micro-operaciones definidas: ' + m);
+  },
+
+  /**
+   * Palabra de control (micro-palabra) que la Unidad de Control emite para
+   * una micro-operación, en cualquiera de las 4 fases:
+   *   MAR ← PC          -> En_PC · Ld_MAR
+   *   MDR ← RAM[MAR]    -> Mem_R · En_RAM · Ld_MDR
+   *   ALU: REN1 ADD REN2 -> Ld_FLAGS · ALU_op=ADD
+   * Un salto condicional solo activa En_MDR y Ld_PC si la bandera cumple la
+   * condición; si no salta, la palabra es vacía (todos los buffers en HIGH-Z).
+   * `banderas` = {ZF, CF, SF}; solo se usa en los saltos condicionales.
+   */
+  palabraDeControl(op, banderas) {
+    if (op.tipo === 'salto' && op.bandera && (!banderas || banderas[op.bandera] !== op.valor)) {
+      return MicroPalabra.vacia();
+    }
+    return MicroPalabra.paraMicroOperacion(op);
   },
 
   /** Texto legible de una micro-operación, para el log y la hoja CPU. */

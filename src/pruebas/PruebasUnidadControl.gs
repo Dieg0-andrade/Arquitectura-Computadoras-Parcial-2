@@ -85,6 +85,15 @@ function suiteUnidadControl_() {
       t.igual(Memoria.leer(0x81), 0);
     });
     // ── Micro-palabra emitida por la UC (tarea 1-6) ──
+    t.prueba('MicroOperaciones.palabraDeControl: una palabra por micro-operación en las 4 fases', () => {
+      const ops = MicroOperaciones.busqueda().concat(MicroOperaciones.planificar(ISA.porOpcode(0x10)));
+      const fases = new Set(ops.map(op => op.fase));
+      t.igual(fases.size, 4);
+      ops.forEach(op => t.igual(Array.isArray(MicroPalabra.aBits(MicroOperaciones.palabraDeControl(op))), true));
+      const salto = { fase: FASES.EJECUCION, tipo: 'salto', bandera: 'ZF', valor: 1 };
+      t.igual(MicroPalabra.describir(MicroOperaciones.palabraDeControl(salto, { ZF: 1 })), 'Ld_PC · En_MDR');
+      t.igual(MicroPalabra.describir(MicroOperaciones.palabraDeControl(salto, { ZF: 0 })), '(ninguna)');
+    });
     t.prueba('micro-palabra: la búsqueda emite las 4 palabras de la guía', () => {
       cargar(['MOV AX, 5', 'HLT']);
       const palabras = [];
