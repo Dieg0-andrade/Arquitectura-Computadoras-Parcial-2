@@ -17,6 +17,13 @@ function suiteFallosPagina_() {
   const respaldoSwap0 = Swap.leerPagina(0);
   const respaldoSwap2 = Swap.leerPagina(2);
   const modoAnterior = MMU.estaActiva();
+  const propiedades = PropertiesService.getDocumentProperties();
+
+const historialAnterior = propiedades.getProperty(
+  ManejadorFallos.CLAVE_ESTADO
+);
+
+const politicaAnterior = ManejadorFallos.politica();
 
   const ss = SpreadsheetApp.getActive();
   const hojaTabla = ss.getSheetByName(HOJAS.TABLA_MARCOS);
@@ -211,6 +218,16 @@ function suiteFallosPagina_() {
     Cache.reiniciar();
     UnidadControl.reiniciar();
 
+    if (historialAnterior === null) {
+  propiedades.deleteProperty(ManejadorFallos.CLAVE_ESTADO);
+} else {
+  propiedades.setProperty(
+    ManejadorFallos.CLAVE_ESTADO,
+    historialAnterior
+  );
+}
+
+ManejadorFallos.seleccionarPolitica(politicaAnterior);
     MMU.activarMemoriaVirtual(modoAnterior);
   }
 
