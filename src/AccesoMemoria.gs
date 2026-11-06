@@ -1,84 +1,81 @@
-/**
- * AccesoMemoria.gs
- * Contrato ÚNICO de acceso a memoria del CPU (decisión D-9 del Parcial 2).
- * El CPU (Bus, Unidad de Control) NUNCA toca la RAM directamente: siempre llama
- * a AccesoMemoria.leer / AccesoMemoria.escribir.
- *
- * API pública (no cambiar sin avisar al equipo):
- *   AccesoMemoria.leer(dirVirtual, tipo)       -> { valor, info }
- *   AccesoMemoria.escribir(dirVirtual, valor)  -> { info }
- *
- *   tipo: 'I' = búsqueda de instrucción (u operando de la instrucción)
- *         'D' = acceso a dato (LOAD / STORE)
- *   info: { vpn, pfn, dirFisica, fallo, hitL1, hitL2 }
- *
- * ESTADO ACTUAL: STUB DIRECTO (tarea 1-2).
- *   Ahora la dirección virtual es igual a la física y el acceso va directo a
- *   Memoria (la RAM plana de 256 bytes) sin MMU ni caché. Por eso info trae:
- *     vpn / pfn  = dirección >> 5 (identidad, cada marco tiene 32 bytes)
- *     fallo      = false
- *     hitL1/L2   = null  ("no aplica": todavía no hay caché)
- *
- * QUIÉN LO REEMPLAZA (el contrato no cambia, solo el interior de estas dos funciones):
- *   - Integrante 2 (tarea 2-4): traducir con MMU.traducir() y atender el
- *     fallo de página (MMU.manejarFalloDePagina) antes de acceder a la RAM.
- *   - Integrante 3 (tarea 3-3): pasar por Cache.acceder() en lugar de Memoria.
- *   - Integrante 2 (tarea 2-8): el segmento de datos pasa a la dirección virtual
- *     100h + dir; ese desplazamiento se aplica aquí cuando tipo = 'D'.
- */
 
+/**
+ * Punto de acceso de la CPU a memoria.
+ * Integra MMU + Cache + FIFO/LRU.
+ * Conserva el contrato de lectura y escritura.
+ */
 const AccesoMemoria = {
 
-
-  /** Lee un byte, traduciendo si el modo virtual esta activo. */
   leer(dirVirtual, tipo) {
     AccesoMemoria.validarTipo_(tipo);
     AccesoMemoria.validarDireccion_(dirVirtual);
 
-    const r = AccesoMemoria.resolver_(dirVirtual);
-    const valor = Memoria.leer(r.dirFisica);
-    if (MMU.estaActiva()) {
-  ManejadorFallos.registrarAcceso(r.vpn, false);
-}
-
-    return {
-      valor: valor,
-      info: {
-        vpn: r.vpn,
-        pfn: r.pfn,
-        dirFisica: r.dirFisica,
-        fallo: false,
-        hitL1: null,
-        hitL2: null
-      }
-    };
+    return AccesoMemoria.acceder_(
+      dirVirtual, tipo, false
+    );
   },
 
-  /** Escribe un byte en la direccion fisica traducida. */
   escribir(dirVirtual, valor) {
     AccesoMemoria.validarDireccion_(dirVirtual);
     UtilMemoria.validarByte(valor);
 
-    const r = AccesoMemoria.resolver_(dirVirtual);
-    Memoria.escribir(r.dirFisica, valor);
+    const acceso = AccesoMemoria.acceder_(
+      dirVirtual, 'D', true, valor
+    );
 
+    return { info: acceso.info };
+  },
+
+  acceder_(dirVirtual, tipo, escritura, valor) {
+    // La MMU traduce antes de consultar la cache.
+    // Una pagina ausente lanza PAGE_FAULT.
+    const r = AccesoMemoria.resolver_(dirVirtual);
+
+    const info = {
+      vpn: r.vpn,
+      pfn: r.pfn,
+      dirFisica: r.dirFisica,
+      fallo: false,
+      hitL1: null,
+      hitL2: null
+    };
+
+    // VPN 15 esta reservada para entrada/salida.
+    if (r.vpn === 15) {
+      if (escritura) {
+        Memoria.escribir(r.dirFisica, valor);
+      } else {
+        valor = Memoria.leer(r.dirFisica);
+      }
+
+      return { valor: valor, info: info };
+    }
+
+    // Integracion de cache de Diego.
+    const acceso = Cache.acceder(
+      tipo, r.dirFisica, escritura, valor
+    );
+
+    info.hitL1 = acceso.nivel === 'L1';
+
+    if (!info.hitL1) {
+      info.hitL2 = acceso.nivel === 'L2';
+    }
+
+    // Integracion FIFO/LRU:
+    // registrar los accesos despues de completarlos.
     if (MMU.estaActiva()) {
-  ManejadorFallos.registrarAcceso(r.vpn, true);
-}
+      ManejadorFallos.registrarAcceso(
+        r.vpn, escritura
+      );
+    }
 
     return {
-      info: {
-        vpn: r.vpn,
-        pfn: r.pfn,
-        dirFisica: r.dirFisica,
-        fallo: false,
-        hitL1: null,
-        hitL2: null
-      }
+      valor: acceso.valor,
+      info: info
     };
   },
 
-  /** Lanza un fallo recuperable cuando P = 0. */
   resolver_(dirVirtual) {
     if (!MMU.estaActiva()) {
       return {
@@ -98,26 +95,21 @@ const AccesoMemoria = {
 
       error.codigo = 'PAGE_FAULT';
       error.vpn = r.vpn;
+
       throw error;
     }
 
     return r;
   },
 
-  // ── Internos ────────────────────────────────────────────────────
-
-  /** Información de depuración del acceso (la completan la MMU y la caché más adelante). */
-  info_(dirFisica) {
-    const marco = dirFisica >> 5;
-    return { vpn: marco, pfn: marco, dirFisica: dirFisica, fallo: false, hitL1: null, hitL2: null };
-  },
-
   validarTipo_(tipo) {
     if (tipo !== 'I' && tipo !== 'D') {
-      throw new Error('Tipo de acceso inválido: "' + tipo + '" (usa \'I\' para instrucción o \'D\' para dato)');
+      throw new Error(
+        'Tipo de acceso invalido: "' +
+        tipo + '" (usa I o D)'
+      );
     }
   },
-
 
   validarDireccion_(dirVirtual) {
     const maximo = MMU.estaActiva()
@@ -125,11 +117,11 @@ const AccesoMemoria = {
       : MAPA_MEMORIA.DATOS_FIN;
 
     if (!Number.isInteger(dirVirtual) ||
-        dirVirtual < 0 || dirVirtual > maximo) {
+        dirVirtual < 0 ||
+        dirVirtual > maximo) {
       throw new Error(
         'Direccion fuera de rango: ' + dirVirtual
       );
     }
   }
-
 };
