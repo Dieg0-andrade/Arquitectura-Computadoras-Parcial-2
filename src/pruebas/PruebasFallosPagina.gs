@@ -41,6 +41,7 @@ function suiteFallosPagina_() {
     }
 
     tabla.setValues(filas);
+    ManejadorFallos.reiniciar();
     MMU.activarMemoriaVirtual(false);
     Cache.reiniciar();
   }
@@ -97,7 +98,8 @@ function suiteFallosPagina_() {
       t.igual(TablaMarcos.obtener(15).pfn, 7);
     });
 
-    t.prueba('Rechaza cuando no hay marcos libres', () => {
+    
+    t.prueba('Reemplaza una pagina cuando la RAM esta llena', () => {
       limpiarEscenario();
 
       for (let i = 0; i < 7; i++) {
@@ -107,13 +109,16 @@ function suiteFallosPagina_() {
         });
       }
 
-      t.lanzaError(() =>
-        MMU.manejarFalloDePagina(10)
-      );
+      const r = MMU.manejarFalloDePagina(10);
 
-      t.igual(TablaMarcos.obtener(10).presente, 0);
+      t.igual(r.victima, 0);
+      t.igual(r.pfnAsignado, 0);
+      t.igual(TablaMarcos.obtener(0).presente, 0);
+      t.igual(TablaMarcos.obtener(10).presente, 1);
+      t.igual(TablaMarcos.obtener(10).pfn, 0);
       t.igual(TablaMarcos.obtener(15).pfn, 7);
     });
+
 
     t.prueba('Registra y resalta el Page Fault', () => {
       limpiarEscenario();

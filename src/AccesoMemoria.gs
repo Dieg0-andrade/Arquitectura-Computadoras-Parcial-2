@@ -37,6 +37,9 @@ const AccesoMemoria = {
 
     const r = AccesoMemoria.resolver_(dirVirtual);
     const valor = Memoria.leer(r.dirFisica);
+    if (MMU.estaActiva()) {
+  ManejadorFallos.registrarAcceso(r.vpn, false);
+}
 
     return {
       valor: valor,
@@ -58,6 +61,10 @@ const AccesoMemoria = {
 
     const r = AccesoMemoria.resolver_(dirVirtual);
     Memoria.escribir(r.dirFisica, valor);
+
+    if (MMU.estaActiva()) {
+  ManejadorFallos.registrarAcceso(r.vpn, true);
+}
 
     return {
       info: {
