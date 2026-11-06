@@ -44,6 +44,7 @@ function onOpen() {
 
 function onEdit(e) {
   if (!e || !e.range) return;
+  if (Perifericos.teclado.atenderEdicion(e)) return;
   VistaRam.alEditar(e);
 }
 
