@@ -62,6 +62,7 @@ function prepararLibro() {
   TablaMarcos.construir(
     ss.getSheetByName(HOJAS.TABLA_MARCOS)
   );
+  ManejadorFallos.reiniciar();
   ISA.escribirEnHoja();
 
   try {

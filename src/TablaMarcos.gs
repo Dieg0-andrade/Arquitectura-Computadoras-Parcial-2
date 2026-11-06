@@ -89,6 +89,27 @@ const TablaMarcos = {
     hoja.getRange('G6')
       .setValue('Ref = 1: pagina utilizada');
 
+    
+    // Selector visible de politica de reemplazo.
+    hoja.getRange('G20')
+      .setValue('Politica de reemplazo')
+      .setFontWeight('bold');
+
+    const selector = hoja.getRange('H20');
+
+    selector.setValue('FIFO')
+      .setBackground('#FFF8E1')
+      .setFontWeight('bold');
+
+    const validacion = SpreadsheetApp
+      .newDataValidation()
+      .requireValueInList(['FIFO', 'LRU'], true)
+      .setAllowInvalid(false)
+      .build();
+
+    selector.setDataValidation(validacion);
+
+
     hoja.setColumnWidths(1, 5, 110);
     hoja.setColumnWidth(7, 260);
     hoja.setFrozenRows(3);
