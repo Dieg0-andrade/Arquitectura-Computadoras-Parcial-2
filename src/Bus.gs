@@ -176,6 +176,9 @@ const Bus = {
    * `palabra` y `buses` son null para 'INM' (constante que pone la UC, sin buffer).
    */
   transferir(origen, destino, inmediato, acceso) {
+    if (destino === 'LCD' && origen !== 'MDR') {
+      throw new Error('El LCD solo recibe datos del MDR');
+    }
     if (origen === 'KBD' && destino !== 'MDR') {
       throw new Error('El teclado solo entrega datos al MDR');
     }
@@ -191,7 +194,7 @@ const Bus = {
 
     let direccion = null;
     const usaRam = origen === 'RAM' || destino === 'RAM';
-    if (usaRam) direccion = Registros.leer('MAR');
+    if (usaRam || destino === 'LCD') direccion = Registros.leer('MAR');
     const tipoAcceso = usaRam ? (acceso || 'D') : null;
 
     const valor = Bus.leerDe_(origen, direccion, inmediato, tipoAcceso);
@@ -241,6 +244,9 @@ const Bus = {
   },
 
   escribirEn_(destino, valor, direccion) {
+    if (destino === 'LCD') {
+      return Perifericos.lcd.escribir(direccion - Perifericos.lcd.BASE, valor);
+    }
     if (destino === 'RAM') return AccesoMemoria.escribir(direccion, valor);
     if (Registros.esRegistro(destino)) return Registros.escribir(destino, valor);
     throw new Error('Destino de bus desconocido: ' + destino);
