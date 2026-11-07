@@ -7,6 +7,7 @@
 
 const HOJAS = {
   CPU: 'CPU',
+  BUSES: 'Buses',
   RAM: 'RAM',
   CODIGO: 'Código',
   COMPILADOR: 'Compilador',
