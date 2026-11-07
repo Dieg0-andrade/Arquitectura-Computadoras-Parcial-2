@@ -159,17 +159,37 @@ const Perifericos = {
     }
   },
 
-  // El LCD corresponde a la tarea 19.
+  // Video: pagina virtual 15, marco fisico 7, ultimos ocho bytes.
   lcd: {
+    BASE: 0xF8,
+    TAMANO: 8,
+
     escribir(posicion, byte) {
-      if (!Number.isInteger(posicion) || posicion < 0 || posicion > 7) {
-        throw new Error('Posición de LCD fuera de rango: ' + posicion + ' (válido 0–7)');
+      const lcd = Perifericos.lcd;
+      if (!Number.isInteger(posicion) || posicion < 0 || posicion >= lcd.TAMANO) {
+        throw new Error('Posicion de LCD fuera de rango: ' + posicion);
       }
-      UtilMemoria.validarByte(byte);
+      Memoria.escribir(lcd.BASE + posicion, byte);
+    },
+
+    caracter_(byte) {
+      return byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : ' ';
     },
 
     texto() {
-      return '        ';
+      const lcd = Perifericos.lcd;
+      return Array.from({ length: lcd.TAMANO }, (_, i) =>
+        lcd.caracter_(Memoria.leer(lcd.BASE + i))
+      ).join('');
+    },
+
+    mostrar_(posicion, bytes) {
+      const hoja = SpreadsheetApp.getActive().getSheetByName(HOJAS.CACHE_IO);
+      if (!hoja || !bytes.length) return;
+      const caracteres = bytes.map(Perifericos.lcd.caracter_);
+      hoja.getRange(31, 11 + posicion, 1, bytes.length)
+        .setNumberFormat('@')
+        .setValues([caracteres]);
     }
   }
 };

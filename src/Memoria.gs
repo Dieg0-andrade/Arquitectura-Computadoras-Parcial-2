@@ -25,6 +25,8 @@ const Memoria = {
     UtilMemoria.validarDireccion(direccion);
     UtilMemoria.validarByte(valor);
     UtilMemoria.celdaDe(direccion).setValue(UtilMemoria.aHex(valor));
+    const lcd = Perifericos.lcd;
+    if (direccion >= lcd.BASE) lcd.mostrar_(direccion - lcd.BASE, [valor]);
   },
 
   volcar() {
@@ -54,12 +56,17 @@ const Memoria = {
     const actual = Memoria.volcar();
     bytes.forEach((b, i) => { actual[inicio + i] = b; });
     UtilMemoria.rangoMatriz().setValues(UtilMemoria.aMatriz(actual));
+    const lcd = Perifericos.lcd;
+    const desde = Math.max(inicio, lcd.BASE);
+    const fin = inicio + bytes.length;
+    if (desde < fin) lcd.mostrar_(desde - lcd.BASE, actual.slice(desde, fin));
     Cache.invalidarTodo();
   },
 
   limpiar() {
     const ceros = new Array(MAPA_MEMORIA.TAMANO).fill(0);
     UtilMemoria.rangoMatriz().setValues(UtilMemoria.aMatriz(ceros));
+    Perifericos.lcd.mostrar_(0, ceros.slice(Perifericos.lcd.BASE));
     Cache.invalidarTodo();
   }
 };

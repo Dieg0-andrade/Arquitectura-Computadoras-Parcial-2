@@ -178,7 +178,7 @@ function suiteAccesoMemoria_() {
 
     t.prueba('Perifericos.lcd: pantalla de 8 caracteres y posiciones 0–7', () => {
       t.igual(Perifericos.lcd.texto().length, 8);
-      Perifericos.lcd.escribir(7, 0x41);
+      probarLCD8x1();
       t.lanzaError(() => Perifericos.lcd.escribir(8, 0x41));
       t.lanzaError(() => Perifericos.lcd.escribir(0, 256));
     });
@@ -187,6 +187,7 @@ function suiteAccesoMemoria_() {
     AccesoMemoria.escribir = escribirOriginal;
     UnidadControl.reiniciar();
     UtilMemoria.rangoMatriz().setValues(UtilMemoria.aMatriz(respaldoRam));
+    Perifericos.lcd.mostrar_(0, respaldoRam.slice(Perifericos.lcd.BASE));
     LISTA_REGISTROS.forEach(r => Registros.escribir(r, respaldoReg[r]));
     Registros.escribirBanderas({
       ZF: respaldoReg.ZF,
