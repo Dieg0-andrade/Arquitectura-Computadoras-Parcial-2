@@ -87,5 +87,28 @@ Constantes: `CONDUCE`, `HIGH_Z`, `SEGMENTO_INTERNO`, `SEGMENTO_EXTERNO`, `BUFFER
 ## 6. Qué sigue
 
 - **1-6 (hecho):** la unidad de control valida con `Bus.estadoBuses` la micro-palabra de cada paso antes de ejecutarlo; el evento trae `buses` y `descripcionBuses`, y la hoja Log muestra la palabra y sus bits.
-- **1-7:** `VistaBuses.gs` pinta `BUFFERS_BUS` en verde (CONDUCE) o gris (HIGH-Z) con `estadoBuffers`.
+- **1-7 (hecho):** panel en la hoja **Buses** (ver sección 7).
 - **3-7 (Integrante 3):** IN y OUT usan dos pasos a través del MDR (`docs/microword.md`, sección E/S).
+
+## 7. Panel de buses (tarea 1-7, hoja **Buses**)
+
+Código: `src/VistaBuses.gs` · Pruebas: `src/pruebas/PruebasVistaBuses.gs` (menú *Pruebas → Vista de buses*).
+
+Se actualiza solo en cada micro-paso (`Simulacion` llama a `VistaBuses.actualizar(evento)` después de *Paso*, *Instrucción* o *Hasta HLT*) y vuelve a reposo con *Reiniciar*.
+
+| Sección | Qué muestra |
+|---|---|
+| Micro-paso / Estado de los buses | `[Paso 03] BÚSQUEDA · IR ← MDR` y el texto de `Bus.describirBuses` |
+| Bus de datos interno | emisores PC, IR, MDR, AX, BX, CX, DX, ALU con su buffer; línea del bus; receptores (`Ld_*`) |
+| Bus de datos externo | emisores MDR, RAM, KBD; línea del bus; receptores MDR, RAM, LCD |
+| Bus de direcciones | buffer del MAR y `MAR (xxh) → MEMORIA` o `→ E/S` |
+| Bus de control | Read, Write, IO, Clock (0/1) |
+| Micro-palabra | las 30 señales, sus bits, el binario y las señales activas |
+
+| Color | Significado |
+|---|---|
+| Verde | el buffer **conduce** / el bus lleva un dato en este paso |
+| Gris | **HIGH-Z**: buffer desconectado / bus en reposo |
+| Ámbar | el componente **carga** el dato (`Ld_*`), la línea de control vale 1 o el bit de la micro-palabra vale 1 |
+
+El MDR aparece en los dos buses de datos: se pinta en verde solo en el segmento por el que conduce en ese paso (interno para `IR ← MDR`, externo para `RAM[MAR] ← MDR`).
