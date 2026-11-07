@@ -194,7 +194,7 @@ const Bus = {
 
     let direccion = null;
     const usaRam = origen === 'RAM' || destino === 'RAM';
-    if (usaRam || destino === 'LCD') direccion = Registros.leer('MAR');
+    if (usaRam || origen === 'KBD' || destino === 'LCD') direccion = Registros.leer('MAR');
     const tipoAcceso = usaRam ? (acceso || 'D') : null;
 
     const valor = Bus.leerDe_(origen, direccion, inmediato, tipoAcceso);

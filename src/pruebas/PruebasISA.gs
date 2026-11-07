@@ -35,9 +35,9 @@ function suiteISA_() {
     t.igual(ISA.formatear(ISA.porOpcode(0x40), 0x06), 'JMP 06h');
     t.igual(ISA.formatear(ISA.porOpcode(0x00)), 'HLT');
   });
-  t.prueba('la ISA tiene 92 instrucciones: 36 del Parcial 1 + 56 con CX y DX', () => {
+  t.prueba('la ISA tiene 100 variantes contando las ocho de E/S', () => {
     t.igual(TABLA_ISA_PARCIAL1_.length, 36);
-    t.igual(TABLA_ISA.length, 92);
+    t.igual(TABLA_ISA.length, 100);
   });
   t.prueba('los opcodes del Parcial 1 no cambiaron', () => {
     TABLA_ISA_PARCIAL1_.forEach(e => t.igual(ISA.porOpcode(e.opcode), e));
@@ -66,8 +66,21 @@ function suiteISA_() {
     t.igual(ISA.porFirma('ADD', ['DX', 'CX']).opcode, 0x80 + 4 * 3 + 2);
     t.igual(ISA.porFirma('CMP', ['AX', 'DX']).opcode, 0xA0 + 4 * 0 + 3);
   });
-  t.prueba('el rango 50h–5Fh queda reservado para E/S (ninguna instrucción lo usa)', () => {
-    TABLA_ISA.forEach(e => { if (e.opcode >= 0x50 && e.opcode <= 0x5F) throw new Error('usa ' + UtilMemoria.aHex(e.opcode)); });
+  t.prueba('IN y OUT ensamblan para los cuatro registros en el rango de E/S', () => {
+    ['AX', 'BX', 'CX', 'DX'].forEach((reg, i) => {
+      const r = Ensamblador.ensamblar(['IN ' + reg + ', [KBD]', 'OUT [LCD], ' + reg, 'HLT']);
+      t.igual(r.ok, true);
+      t.igual(r.memoria.slice(0, 5).join(','), [0x50 + i, 0xF0, 0x54 + i, 0xF8, 0].join(','));
+    });
+    for (let op = 0x58; op <= 0x5F; op++) t.igual(ISA.porOpcode(op), null);
+  });
+
+  t.prueba('los puertos incorrectos se rechazan con numero de linea', () => {
+    ['IN AX, [LCD]', 'OUT [KBD], AX', 'IN AX, KBD'].forEach(linea => {
+      const r = Ensamblador.ensamblar(['.code', linea]);
+      t.igual(r.ok, false);
+      t.igual(r.errores[0].linea, 2);
+    });
   });
   t.prueba('formatear con CX y DX', () => {
     t.igual(ISA.formatear(ISA.porFirma('MOV', ['CX', 'INM']), 5), 'MOV CX, 05h');
