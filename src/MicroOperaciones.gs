@@ -78,6 +78,13 @@ const MicroOperaciones = {
       ops.push({ fase: A, tipo: 'bus', origen: origen, destino: entrada.destino });
       return ops;
     }
+    if (m === 'IN' || m === 'OUT') {
+      // El segundo byte de la instruccion ya esta en MDR.
+      ops.push({ fase: E, tipo: 'bus', origen: 'MDR', destino: 'MAR' });
+      ops.push({ fase: E, tipo: 'bus', origen: entrada.origen, destino: 'MDR' });
+      ops.push({ fase: A, tipo: 'bus', origen: 'MDR', destino: entrada.destino });
+      return ops;
+    }
     if (m === 'LOAD') {
       ops.push({ fase: E, tipo: 'bus', origen: 'MDR', destino: 'MAR' });
       ops.push({ fase: E, tipo: 'bus', origen: 'RAM', destino: 'MDR', acceso: 'D' });

@@ -17,7 +17,7 @@
  *
  * Organización de los opcodes por grupos (nibble alto):
  *   0x -> control   1x -> transferencia   2x -> aritmética
- *   3x -> lógica    4x -> saltos          5x -> RESERVADO para E/S (IN / OUT)
+ *   3x -> lógica    4x -> saltos          5x -> entrada y salida (IN / OUT)
  *   6x..Ax -> variantes con CX y DX (Parcial 2, ver generarIsaRegistrosExtra_)
  *
  * Registros de propósito general: AX, BX, CX y DX (8 bits). Los opcodes del
@@ -91,7 +91,7 @@ const TABLA_ISA_PARCIAL1_ = [
  *   A0h–AFh  CMP  destino, origen   ┘ Los pares (AX,BX) y (BX,AX) ya existen
  *                                     con sus opcodes del Parcial 1 (12h, 21h...),
  *                                     así que esos huecos quedan sin usar.
- *   50h–5Fh  reservado para E/S (IN / OUT)
+ *   50h-53h IN y 54h-57h OUT, en orden AX, BX, CX, DX. 58h-5Fh libres.
  */
 const REGISTROS_ISA_ = ['AX', 'BX', 'CX', 'DX'];
 
@@ -101,6 +101,12 @@ function generarIsaRegistrosExtra_() {
     lista.push({ opcode: opcode, mnemonico: mnemonico, operandos: operandos, bytes: bytes, modo: modo,
       destino: destino, origen: origen, alu: alu, descripcion: descripcion });
   const nuevos = ['CX', 'DX'];
+
+  // E/S: el opcode identifica el registro y el segundo byte identifica el puerto.
+  REGISTROS_ISA_.forEach((r, i) => {
+    agregar(0x50 + i, 'IN', r + ', [KBD]', 2, 'E/S', r, 'KBD', null, 'Leer un byte del teclado en ' + r);
+    agregar(0x54 + i, 'OUT', '[LCD], ' + r, 2, 'E/S', 'LCD', r, null, 'Enviar ' + r + ' al LCD');
+  });
 
   // Transferencia con CX y DX
   nuevos.forEach((r, i) => {
@@ -142,7 +148,7 @@ function generarIsaRegistrosExtra_() {
   return lista;
 }
 
-/** Tabla completa, ordenada por opcode: 36 instrucciones del Parcial 1 + 56 con CX y DX = 92. */
+/** Tabla completa, ordenada por opcode, incluidos los perifericos de E/S. */
 const TABLA_ISA = TABLA_ISA_PARCIAL1_.concat(generarIsaRegistrosExtra_()).sort((a, b) => a.opcode - b.opcode);
 
 const ISA = {

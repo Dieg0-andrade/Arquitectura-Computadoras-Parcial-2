@@ -93,7 +93,7 @@ const Ensamblador = {
       if (!s.entrada) return;
       const bytes = [s.entrada.opcode];
       if (s.entrada.bytes === 2) {
-        const op = s.operandos.find(o => o.tipo === 'INM' || o.tipo === 'MEM' || o.tipo === 'DIR');
+        const op = s.operandos.find(o => o.tipo === 'INM' || o.tipo === 'MEM' || o.tipo === 'DIR' || o.tipo === 'KBD' || o.tipo === 'LCD');
         const valor = Ensamblador.resolver_(op, tabla, s.linea, error);
         bytes.push(valor === null ? 0 : valor);
       }
@@ -169,7 +169,10 @@ const Ensamblador = {
           throw new Error('Se esperaba una dirección o variable dentro de [ ]');
         }
         if (!tokens[i + 2] || tokens[i + 2].tipo !== TIPO_TOKEN.CORCHETE_CIERRA) throw new Error('Falta "]"');
-        operando = { tipo: 'MEM', token: dentro };
+        const puerto = dentro.texto.toUpperCase();
+        const esPuerto = (s.mnemonico === 'IN' && puerto === 'KBD') ||
+          (s.mnemonico === 'OUT' && puerto === 'LCD');
+        operando = { tipo: esPuerto ? puerto : 'MEM', token: dentro };
         i += 3;
       } else if (t.tipo === TIPO_TOKEN.NUMERO || t.tipo === TIPO_TOKEN.IDENTIFICADOR) {
         operando = { tipo: SALTOS.indexOf(s.mnemonico) !== -1 ? 'DIR' : 'INM', token: t };
@@ -189,6 +192,8 @@ const Ensamblador = {
 
   /** Valor numérico de un operando: número literal o dirección de un símbolo. */
   resolver_(operando, tabla, linea, error) {
+    if (operando.tipo === 'KBD') return Perifericos.teclado.BASE;
+    if (operando.tipo === 'LCD') return Perifericos.lcd.BASE;
     const t = operando.token;
     if (t.tipo === TIPO_TOKEN.NUMERO) return t.valor;
     const simbolo = tabla[t.texto];
