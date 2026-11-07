@@ -34,6 +34,7 @@ function onOpen() {
       .addItem('ISA', 'probarISA')
       .addItem('Micro-palabra', 'probarMicroPalabra')
       .addItem('Bus', 'probarBus')
+      .addItem('Vista de buses', 'probarVistaBuses')
       .addItem('Ensamblador', 'probarEnsamblador')
       .addItem('Unidad de control', 'probarUnidadControl')
       .addItem('Simulación', 'probarSimulacion')

@@ -32,6 +32,7 @@ const Simulacion = {
     LogMicroops.limpiar();
     Resaltado.limpiar();
     Traza.limpiar();
+    VistaBuses.limpiar();
     return Simulacion.resumen_(null);
   },
 
@@ -136,6 +137,7 @@ const Simulacion = {
       LogMicroops.escribirPanel(ultimo.historial);
       Resaltado.aplicar(ultimo);
       Traza.aplicar(ultimo);
+      VistaBuses.actualizar(ultimo);
     }
     if (error) throw error;
 
