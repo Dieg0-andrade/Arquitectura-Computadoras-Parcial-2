@@ -5,8 +5,11 @@
   <b>Equipo: Los Tigris</b>
 </p>
 
-Simulador interactivo del **ciclo de instrucción completo** y de la **memoria principal** de una computadora
-von Neumann de 8 bits, construido en **Google Sheets + Google Apps Script**.
+<p align="center">🇪🇸 Español · 🇬🇧 <a href="README_EN.md">English</a></p>
+
+Simulador interactivo de una CPU von Neumann de 8 bits construido en **Google Sheets + Google Apps Script**:
+ciclo de instrucción completo con **micro-palabra de control**, **buses con buffers tri-estado**,
+**memoria virtual** con Page Fault, **caché L1I / L1D / L2** y **teclado y LCD** mapeados en memoria.
 
 - **Materia:** Arquitectura de Computadoras (SIS-131) · Universidad Católica Boliviana "San Pablo", Santa Cruz
 - **Docente:** Ing. Paulo César Loayza Carrasco
@@ -16,108 +19,125 @@ von Neumann de 8 bits, construido en **Google Sheets + Google Apps Script**.
 - Diego Andrade
 - Daniel Roca
 
-> 🔗 **Simulador:** [Abrir la hoja de cálculo](PEGA_AQUI_EL_ENLACE_DE_TU_HOJA) (solo lectura; para usarlo: *Archivo → Hacer una copia*)
+> 🔗 **Simulador:** [Abrir la hoja de cálculo](PEGA_AQUI_EL_ENLACE_DE_TU_HOJA) — el enlace final termina en `/copy`, así quien lo abre obtiene su propia copia con el script incluido.
 
 ---
 
 ## Contenido
 
 1. [Descripción](#1-descripción)
-2. [Arquitectura von Neumann](#2-arquitectura-von-neumann)
+2. [Arquitectura](#2-arquitectura)
 3. [Mapa de memoria](#3-mapa-de-memoria)
 4. [Registros y banderas](#4-registros-y-banderas)
 5. [Ciclo de instrucción](#5-ciclo-de-instrucción)
-6. [Conjunto de instrucciones (ISA)](#6-conjunto-de-instrucciones-isa)
-7. [Ensamblador y compilador](#7-ensamblador-y-compilador)
-8. [Manual de usuario](#8-manual-de-usuario)
-9. [Programa demostrativo y traza](#9-programa-demostrativo-y-traza)
-10. [Pruebas](#10-pruebas)
-11. [Estructura del código](#11-estructura-del-código)
-12. [Decisiones de diseño](#12-decisiones-de-diseño)
-13. [Gestión del proyecto](#13-gestión-del-proyecto)
-14. [Extensión para el Parcial 2](#14-extensión-para-el-parcial-2)
+6. [Buses, buffers tri-estado y micro-palabra](#6-buses-buffers-tri-estado-y-micro-palabra)
+7. [Conjunto de instrucciones (ISA)](#7-conjunto-de-instrucciones-isa)
+8. [Memoria virtual](#8-memoria-virtual)
+9. [Caché L1I / L1D / L2](#9-caché-l1i--l1d--l2)
+10. [Periféricos de E/S](#10-periféricos-de-es)
+11. [Ensamblador y compilador](#11-ensamblador-y-compilador)
+12. [Manual de usuario](#12-manual-de-usuario)
+13. [Programas](#13-programas)
+14. [Pruebas](#14-pruebas)
+15. [Estructura del código](#15-estructura-del-código)
+16. [Decisiones de diseño](#16-decisiones-de-diseño)
+17. [Gestión del proyecto y contribuciones](#17-gestión-del-proyecto-y-contribuciones)
 
 ---
 
 ## 1. Descripción
 
 El simulador ejecuta programas escritos en un **lenguaje de alto nivel** (que se compila) o directamente en
-**ensamblador**, sobre una CPU de 8 bits con 256 bytes de RAM:
+**ensamblador**. Cada instrucción se descompone en **micro-operaciones** que se ejecutan una por una en las
+cuatro fases del ciclo: **búsqueda → decodificación → ejecución → almacenamiento**. En cada micro-paso la
+Unidad de Control emite una **micro-palabra** de 30 bits que decide qué buffers tri-estado conducen al bus.
 
 ```
-alto nivel ──compilador──▶ ensamblador ──ensamblador──▶ código máquina en RAM ──▶ ciclo de instrucción
+alto nivel ──compilador──▶ ensamblador ──ensamblador──▶ código máquina en memoria virtual ──▶ ciclo de instrucción
+                                                                     │
+                                       CPU ──▶ MMU ──▶ L1I / L1D ──▶ L2 ──▶ RAM (8 marcos) ◀──▶ Swap (16 páginas)
 ```
 
-Cada instrucción se descompone en **micro-operaciones** que se ejecutan una por una, recorriendo las cuatro fases
-del ciclo: **búsqueda → decodificación → ejecución → almacenamiento**.
-
-Todo es visible en la hoja: los registros, la memoria (16 × 16), la fase activa, la micro-operación actual,
-el log cronológico y los componentes que participan en cada paso (resaltados en color).
-
-| Requisito del enunciado | Dónde está |
+| Requisito | Dónde está |
 |---|---|
-| RAM de 256 bytes (00h–FFh) en hex, binario y decimal/mnemónico | Hoja **RAM** (matriz 16 × 16 + inspector) |
-| Segmento de código y de datos | 00h–7Fh código · 80h–FFh datos |
-| `Read(address)` / `Write(address, value)` | `Memoria.leer` / `Memoria.escribir` |
-| PC, IR, MAR, MDR, AX, BX, ZF, CF, SF, ALU | Hoja **CPU** |
-| Ciclo Fetch → Decode → Execute → Store | `UnidadControl.gs` + `MicroOperaciones.gs` |
-| Paso a paso, continuo, STEP / RUN / PAUSE / RESET / LOAD | **Controles en la hoja CPU** (columna P) · también en el menú y en un panel lateral opcional |
-| Resaltado visual y log de micro-operaciones | `Resaltado.gs`, hoja **Log** y panel de la hoja CPU |
-| ISA mínima (MOV, LOAD, STORE, ADD, SUB, INC, DEC, CMP, JMP, JZ, JNZ, HLT) | Hoja **ISA** y [sección 6](#6-conjunto-de-instrucciones-isa) |
-| Programa demostrativo con bucles y bifurcaciones | Multiplicación por sumas sucesivas ([sección 9](#9-programa-demostrativo-y-traza)) |
-| Extra: compilador de alto nivel y traza de la línea en ejecución | `Compilador.gs`, `Traza.gs` ([sección 7](#7-ensamblador-y-compilador)) |
+| Registros AX, BX, **CX, DX**, PC, IR, MAR, MDR, banderas ZF, CF, SF | Hoja **CPU** · `Registros.gs` |
+| Buses de control, direcciones y datos; interno y externo | Hoja **Buses** · `Bus.gs` ([sección 6](#6-buses-buffers-tri-estado-y-micro-palabra)) |
+| Buffers tri-estado (CONDUCE / HIGH-Z) y micro-palabra por paso | `MicroPalabra.gs`, `VistaBuses.gs`, hoja **Log** (columnas F y G) |
+| Memoria virtual de 512 B, RAM de 256 B (8 marcos × 32 B), Page Fault y swap | Hojas **TablaMarcos**, **Swap**, **RAM** ([sección 8](#8-memoria-virtual)) |
+| Caché L1I 8 B, L1D 8 B, L2 32 B con Hit/Miss y contadores | Hoja **Cache_IO** ([sección 9](#9-caché-l1i--l1d--l2)) |
+| Teclado (cola de 8 B) y LCD 8x1 mapeados en memoria, `IN` / `OUT` | Hoja **Cache_IO** ([sección 10](#10-periféricos-de-es)) |
+| Ciclo Fetch → Decode → Execute → Store, paso a paso y continuo | `UnidadControl.gs`, `MicroOperaciones.gs` |
+| STEP / RUN / PAUSE / RESET | Controles de la hoja **CPU** (columna P), menú y panel lateral |
+| Resaltado visual, log y leyenda de colores | `Resaltado.gs`, hoja **Log**, hojas **Inicio** y **CPU** |
+| Nombre y logo del equipo | Hoja **Inicio** y este README |
 
 ---
 
-## 2. Arquitectura von Neumann
+## 2. Arquitectura
 
 ```mermaid
 flowchart LR
-    subgraph CPU["CPU · 8 bits"]
-        direction TB
-        UC["Unidad de Control<br/>PC (C.P.) · IR (R.I.)<br/>Decodificador · Secuenciador"]
-        ALU["ALU<br/>REN1 · REN2 · C.OP<br/>R. Estado: ZF · CF · SF"]
-        REG["Registros generales<br/>AX (acumulador) · BX"]
-        MI["Interfaz de memoria<br/>MAR (RDM) · MDR (RIM)"]
-    end
-    BUS[["Bus del sistema<br/>(único camino CPU ↔ memoria)"]]
-    RAM[("Memoria principal · 256 bytes<br/>Código 00h–7Fh<br/>Datos 80h–FFh")]
-    UC <--> BUS
-    ALU <--> BUS
-    REG <--> BUS
-    MI <--> BUS
-    BUS <--> RAM
+  subgraph CPU["CPU · 8 bits"]
+    direction TB
+    UC["Unidad de Control<br/>PC · IR · micro-palabra"]
+    BI[["Bus de datos INTERNO"]]
+    REGS["AX · BX · CX · DX"]
+    ALU["ALU<br/>REN1 · REN2 · ZF CF SF"]
+    MAR["MAR"]
+    MDR["MDR<br/>(puente)"]
+    UC --- BI
+    REGS <-->|En_* / Ld_*| BI
+    ALU <-->|En_ALU / Ld_REN*| BI
+    BI -->|Ld_MAR| MAR
+    MDR <--> BI
+  end
+  MAR -->|Bus de DIRECCIONES| MMU["MMU<br/>tabla de marcos"]
+  MMU --> L1I["L1I · 8 B"]
+  MMU --> L1D["L1D · 8 B"]
+  L1I --> L2["L2 · 32 B"]
+  L1D --> L2
+  L2 --> RAM[("RAM física<br/>8 marcos × 32 B")]
+  RAM <-->|Page Fault| SWAP[("Swap<br/>16 páginas × 32 B")]
+  MDR <-->|Bus de datos EXTERNO| RAM
+  KBD["Teclado<br/>cola 8 B"] -->|En_KBD| MDR
+  MDR -->|Ld_LCD| LCD["LCD 8x1"]
+  UC -->|Bus de CONTROL<br/>Read · Write · IO · Clock| RAM
 ```
 
-**Por qué es una arquitectura von Neumann:**
+**Sigue siendo una arquitectura von Neumann:** código y datos comparten una sola memoria (virtual) y un solo
+camino MAR/MDR. No se puede traer una instrucción y un dato a la vez: es el **cuello de botella de von Neumann**.
+La caché separa L1I y L1D para aliviarlo, pero detrás de ellas hay una sola L2 y una sola RAM.
 
-1. **Programa almacenado:** las instrucciones se ensamblan y se cargan en la RAM, igual que los datos.
-2. **Una sola memoria** para código y datos. La separación 00h–7Fh / 80h–FFh es lógica, no física.
-3. **Un solo camino a memoria:** la búsqueda de instrucciones y los `LOAD`/`STORE` usan el mismo MAR/MDR y el mismo bus.
-   No se puede traer una instrucción y un dato a la vez: es el **cuello de botella de von Neumann**
-   (un `LOAD` usa MAR/MDR dos veces para el opcode y el operando, y una tercera para el dato).
-4. **Ejecución secuencial:** el PC avanza instrucción por instrucción; solo los saltos lo modifican.
-
-| Componente | Módulo | Parcial |
+| Componente | Módulo | Responsable |
 |---|---|---|
-| Unidad de Control | `UnidadControl.gs`, `MicroOperaciones.gs` | 1 ✔ |
-| ALU | `ALU.gs` | 1 ✔ |
-| Registros | `Registros.gs` | 1 ✔ |
-| Memoria principal | `Memoria.gs`, `VistaRam.gs` | 1 ✔ |
-| Bus del sistema | `Bus.gs` (abstracción simple) | 2 (multiplexado) |
-| Entrada / Salida | — | 2 |
+| Unidad de Control y micro-operaciones | `UnidadControl.gs`, `MicroOperaciones.gs` | Adrian |
+| Micro-palabra y buses tri-estado | `MicroPalabra.gs`, `Bus.gs`, `VistaBuses.gs` | Adrian |
+| Registros e ISA (CX, DX) | `Registros.gs`, `ISA.gs` | Adrian |
+| Contrato único de memoria | `AccesoMemoria.gs` | Adrian (contrato) · Daniel (MMU) · Diego (caché) |
+| MMU, tabla de marcos, Page Fault, reemplazo y swap | `MMU.gs`, `TablaMarcos.gs`, `ManejadorFallos.gs`, `Swap.gs` | Daniel |
+| RAM en marcos | `VistaRam.gs`, `Memoria.gs` | Daniel |
+| Caché L1I / L1D / L2 | `Cache.gs`, `VistaCache.gs`, `VistaCacheActividad.gs` | Diego |
+| Teclado, LCD, `IN` / `OUT` | `Perifericos.gs` | Diego |
+| ALU, ensamblador, compilador (Parcial 1) | `ALU.gs`, `Ensamblador*.gs`, `Compilador.gs` | Base del Parcial 1 |
 
 ---
 
 ## 3. Mapa de memoria
 
-| Rango | Segmento | Contenido |
-|---|---|---|
-| `00h – 7Fh` | Código | Instrucciones del programa (128 bytes) |
-| `80h – FFh` | Datos | Variables declaradas con `DB` (128 bytes) |
+**Espacio virtual de 9 bits (000h–1FFh = 512 B, 16 páginas de 32 B)** y **RAM física de 256 B (8 marcos de 32 B)**.
 
-- Palabra de **8 bits** por celda; la matriz de la hoja RAM es la fuente de verdad (editar una celda a mano cambia la memoria).
-- El **inspector** (celda `U4` de la hoja RAM) muestra cualquier dirección en hex, binario, decimal con y sin signo, segmento y mnemónico.
+| Dirección virtual | Páginas | Segmento | Notas |
+|---|---|---|---|
+| `000h – 0FFh` | 0 – 7 | Código | `PC` de 8 bits = dirección virtual de código |
+| `100h – 1DFh` | 8 – 14 | Datos | Un operando `[dir]` de 8 bits apunta a `100h + dir` |
+| `1E0h – 1EFh` | 15 | E/S (libre) | Página fija en el marco 7, sin caché |
+| `1F0h – 1F7h` | 15 | E/S | Cola del **teclado** (8 B) |
+| `1F8h – 1FFh` | 15 | E/S | Buffer del **LCD** (8 B) |
+
+- **Traducción:** `VPN = dir >> 5`, `desplazamiento = dir & 31`, `dirFísica = PFN × 32 + desplazamiento`.
+- La **página 15** (E/S) queda **fija en el marco 7**, nunca se desaloja y **no pasa por la caché**.
+- Con la memoria virtual desactivada, la dirección física es la virtual (modo del Parcial 1: código `00h–7Fh`, datos `80h–FFh`).
+- El **inspector** de la hoja RAM muestra cualquier dirección en hex, binario, decimal, segmento y mnemónico.
 
 ---
 
@@ -127,12 +147,14 @@ flowchart LR
 |---|---|---|
 | PC | C.P. | Dirección de la siguiente instrucción |
 | IR | R.I. | Opcode de la instrucción en curso |
-| MAR | RDM | Dirección de memoria que se lee o escribe |
-| MDR | RIM | Dato que llega de la RAM o va hacia ella |
+| MAR | RDM | Dirección que sale por el bus de direcciones |
+| MDR | RIM | Dato que entra o sale por el bus de datos externo (puente entre los dos buses de datos) |
 | AX | Acumulador | Propósito general / resultados |
 | BX | — | Propósito general |
+| **CX** | Contador | Propósito general · contador de bucles (`DEC CX` + `JNZ`) |
+| **DX** | Datos | Propósito general · datos y E/S |
 | REN1, REN2 | Entradas de la ALU | Operandos A y B |
-| C.OP | Código de operación | Operación que ejecuta la ALU |
+| RESULTADO | Salida de la ALU | Resultado que vuelve al bus con `En_ALU` |
 
 | Bandera | Se activa cuando… |
 |---|---|
@@ -148,32 +170,96 @@ flowchart LR
 flowchart LR
     B["BÚSQUEDA<br/>MAR ← PC<br/>MDR ← RAM[MAR]<br/>IR ← MDR<br/>PC ← PC + 1"]
     D["DECODIFICACIÓN<br/>Decodificar IR<br/>si hay operando:<br/>MAR ← PC · MDR ← RAM[MAR] · PC ← PC + 1"]
-    E["EJECUCIÓN<br/>ALU · cálculo de dirección · salto"]
+    E["EJECUCIÓN<br/>ALU · cálculo de dirección · salto · E/S"]
     A["ALMACENAMIENTO<br/>registro ← resultado<br/>o RAM[MAR] ← MDR"]
+    PF{{"Page Fault<br/>cargar página desde Swap<br/>y repetir la micro-operación"}}
     B --> D --> E --> A --> B
     E -. HLT .-> H(("DETENIDO"))
+    B -. P = 0 .-> PF
+    E -. P = 0 .-> PF
+    PF -. reintento .-> B
 ```
 
-Cada micro-operación es un paso del reloj. Todo movimiento de datos pasa por `Bus.transferir(origen, destino)`.
+Cada micro-operación es un paso del reloj y tiene su **micro-palabra** ([sección 6](#6-buses-buffers-tri-estado-y-micro-palabra)).
+Si la página no está en RAM, el manejador de fallos la trae desde el Swap y **repite la micro-operación que falló sin avanzar el PC**.
 
 | Instrucción | Ejecución | Almacenamiento |
 |---|---|---|
 | `MOV r, inm` | — | `r ← MDR` |
+| `MOV r1, r2` | — | `r1 ← r2` |
 | `LOAD r, [dir]` | `MAR ← MDR` · `MDR ← RAM[MAR]` | `r ← MDR` |
 | `STORE [dir], r` | `MAR ← MDR` · `MDR ← r` | `RAM[MAR] ← MDR` |
-| `ADD r, inm` | `REN1 ← r` · `REN2 ← MDR` · ALU | `r ← RESULTADO` |
+| `ADD r, x` | `REN1 ← r` · `REN2 ← x` · ALU | `r ← RESULTADO` |
 | `CMP r, x` | `REN1 ← r` · `REN2 ← x` · ALU | (no guarda, solo banderas) |
+| `IN r, [KBD]` | `MAR ← MDR` · `MDR ← KBD` | `r ← MDR` |
+| `OUT [LCD], r` | `MAR ← MDR` · `MDR ← r` | `LCD ← MDR` |
 | `JMP dir` | `PC ← MDR` | — |
 | `JZ` / `JNZ dir` | `PC ← MDR` solo si ZF = 1 / 0 | — |
 | `HLT` | detiene el reloj | — |
 
 ---
 
-## 6. Conjunto de instrucciones (ISA)
+## 6. Buses, buffers tri-estado y micro-palabra
 
-- **35 instrucciones** de 1 o 2 bytes: `[opcode]` o `[opcode][operando]`.
-- Opcodes agrupados por **nibble alto**: `0x` control · `1x` transferencia · `2x` aritmética · `3x` lógica · `4x` saltos.
-- Modos de direccionamiento: implícito, registro, inmediato (`inm`), directo (`[dir]`) y absoluto (`dir`).
+Detalle completo: [`docs/buses.md`](docs/buses.md) y [`docs/microword.md`](docs/microword.md).
+
+### Buses
+
+| Bus | Conecta | Quién lo maneja |
+|---|---|---|
+| **Datos interno** | PC, IR, MAR, MDR, AX, BX, CX, DX, REN1, REN2, ALU | el componente con `En_*` = 1 |
+| **Datos externo** | MDR, RAM, teclado, LCD | RAM (`En_RAM`), teclado (`En_KBD`) o MDR (`En_MDR` + `Mem_W`) |
+| **Direcciones** | MAR → MMU → caché / RAM o E/S | MAR, cuando hay `Mem_R` o `Mem_W` |
+| **Control** | Unidad de Control → memoria y E/S | líneas `Read`, `Write`, `IO`, `Clock` |
+
+El **MDR es el puente**: es el único registro conectado a los dos buses de datos. La RAM, el teclado y el LCD hablan con el CPU solo a través del MDR.
+
+### Reglas tri-estado
+
+- `En_X = 1` → el buffer de X **CONDUCE** (verde en la hoja Buses). `En_X = 0` → **HIGH-Z** (gris).
+- `Ld_X = 1` → X **carga** el dato del bus (ámbar). Puede haber varios receptores a la vez.
+- **Como máximo un `En_*` por micro-paso** (decisión D-8). Dos emisores = error y el CPU se detiene con `ERROR` **sin ejecutar el paso**.
+- Emisor y receptores deben estar en el **mismo bus de datos**; entre bus interno y externo se pasa por el MDR.
+- `Mem_R` y `Mem_W` nunca juntas; un registro no emite y carga en el mismo paso.
+
+### Micro-palabra (30 bits)
+
+26 señales de 1 bit + el campo `ALU_op` de 4 bits, en este orden (bit 29 a la izquierda):
+
+| Bits | Señales |
+|---|---|
+| 29–27 | `En_PC` · `Ld_PC` · `Inc_PC` |
+| 26–21 | `Ld_MAR` · `Mem_R` · `Mem_W` · `Ld_MDR` · `En_MDR` · `En_RAM` |
+| 20–19 | `Ld_IR` · `En_IR` |
+| 18–15 | `En_ALU` · `Ld_REN1` · `Ld_REN2` · `Ld_FLAGS` |
+| 14–7 | `Ld_AX` · `En_AX` · `Ld_BX` · `En_BX` · `Ld_CX` · `En_CX` · `Ld_DX` · `En_DX` |
+| 6–4 | `En_KBD` · `Ld_LCD` · `IO` |
+| 3–0 | `ALU_op`: `0000` ninguna · `0001` ADD · `0010` SUB · `0011` INC · `0100` DEC · `0101` CMP · `0110` AND · `0111` OR · `1000` XOR · `1001` NOT |
+
+**Ejemplo: fase de búsqueda**
+
+| Micro-operación | Señales en 1 | Bus activo | Conducen |
+|---|---|---|---|
+| `MAR ← PC` | `En_PC` `Ld_MAR` | interno: PC → MAR | PC |
+| `MDR ← RAM[MAR]` | `Mem_R` `En_RAM` `Ld_MDR` | externo: RAM → MDR | RAM, MAR (direcciones) |
+| `IR ← MDR` | `En_MDR` `Ld_IR` | interno: MDR → IR | MDR |
+| `PC ← PC + 1` | `Inc_PC` | ninguno (todo en HIGH-Z) | — |
+
+`MAR ← PC` en bits: `1001 0000 0000 0000 0000 0000 0000 00`. La hoja **Log** muestra la micro-palabra y sus bits
+en cada paso, y la hoja **Buses** la dibuja con los buffers en verde o gris.
+
+---
+
+## 7. Conjunto de instrucciones (ISA)
+
+- **100 instrucciones** de 1 o 2 bytes: 36 del Parcial 1 (AX, BX), 56 con **CX y DX** y 8 de **E/S**.
+- Opcodes: `0x` control · `1x` transferencia · `2x` aritmética · `3x` lógica · `4x` saltos · `5x` **E/S** ·
+  `6x` INC/DEC y operaciones con inmediato de CX/DX · `7x`–`Ax` MOV/ADD/SUB/CMP entre registros (`base + 4·destino + origen`, con AX = 0, BX = 1, CX = 2, DX = 3).
+- Modos de direccionamiento: implícito, registro, inmediato (`inm`), directo (`[dir]`), absoluto (`dir`) y E/S.
+- La misma tabla está en la hoja **ISA** (se genera desde `ISA.gs`, que es la única fuente de verdad). Detalle de CX/DX: [`docs/isa-cx-dx.md`](docs/isa-cx-dx.md).
+
+<details>
+<summary><b>Tabla completa (100 instrucciones)</b></summary>
 
 | Opcode | Mnemónico | Operandos | Bytes | Modo | Descripción |
 |---|---|---|---|---|---|
@@ -186,6 +272,12 @@ Cada micro-operación es un paso del reloj. Todo movimiento de datos pasa por `B
 | `15h` | LOAD | BX, [dir] | 2 | directo | BX ← RAM[dir] |
 | `16h` | STORE | [dir], AX | 2 | directo | RAM[dir] ← AX |
 | `17h` | STORE | [dir], BX | 2 | directo | RAM[dir] ← BX |
+| `18h` | MOV | CX, inm | 2 | inmediato | CX ← dato inmediato |
+| `19h` | MOV | DX, inm | 2 | inmediato | DX ← dato inmediato |
+| `1Ah` | LOAD | CX, [dir] | 2 | directo | CX ← RAM[dir] |
+| `1Bh` | LOAD | DX, [dir] | 2 | directo | DX ← RAM[dir] |
+| `1Ch` | STORE | [dir], CX | 2 | directo | RAM[dir] ← CX |
+| `1Dh` | STORE | [dir], DX | 2 | directo | RAM[dir] ← DX |
 | `20h` | ADD | AX, inm | 2 | inmediato | AX ← AX + inm |
 | `21h` | ADD | AX, BX | 1 | registro | AX ← AX + BX |
 | `22h` | ADD | BX, inm | 2 | inmediato | BX ← BX + inm |
@@ -213,10 +305,116 @@ Cada micro-operación es un paso del reloj. Todo movimiento de datos pasa por `B
 | `40h` | JMP | dir | 2 | absoluto | PC ← dir (salto incondicional) |
 | `41h` | JZ | dir | 2 | absoluto | Si ZF = 1: PC ← dir |
 | `42h` | JNZ | dir | 2 | absoluto | Si ZF = 0: PC ← dir |
+| `50h` | IN | AX, [KBD] | 2 | E/S | Leer un byte del teclado en AX |
+| `51h` | IN | BX, [KBD] | 2 | E/S | Leer un byte del teclado en BX |
+| `52h` | IN | CX, [KBD] | 2 | E/S | Leer un byte del teclado en CX |
+| `53h` | IN | DX, [KBD] | 2 | E/S | Leer un byte del teclado en DX |
+| `54h` | OUT | [LCD], AX | 2 | E/S | Enviar AX al LCD |
+| `55h` | OUT | [LCD], BX | 2 | E/S | Enviar BX al LCD |
+| `56h` | OUT | [LCD], CX | 2 | E/S | Enviar CX al LCD |
+| `57h` | OUT | [LCD], DX | 2 | E/S | Enviar DX al LCD |
+| `60h` | INC | CX | 1 | registro | CX ← CX + 1 |
+| `61h` | INC | DX | 1 | registro | DX ← DX + 1 |
+| `62h` | DEC | CX | 1 | registro | CX ← CX − 1 |
+| `63h` | DEC | DX | 1 | registro | DX ← DX − 1 |
+| `64h` | ADD | CX, inm | 2 | inmediato | CX ← CX + inm |
+| `65h` | ADD | DX, inm | 2 | inmediato | DX ← DX + inm |
+| `66h` | SUB | CX, inm | 2 | inmediato | CX ← CX − inm |
+| `67h` | SUB | DX, inm | 2 | inmediato | DX ← DX − inm |
+| `68h` | CMP | CX, inm | 2 | inmediato | Banderas de CX − inm (no guarda) |
+| `69h` | CMP | DX, inm | 2 | inmediato | Banderas de DX − inm (no guarda) |
+| `72h` | MOV | AX, CX | 1 | registro | AX ← CX |
+| `73h` | MOV | AX, DX | 1 | registro | AX ← DX |
+| `76h` | MOV | BX, CX | 1 | registro | BX ← CX |
+| `77h` | MOV | BX, DX | 1 | registro | BX ← DX |
+| `78h` | MOV | CX, AX | 1 | registro | CX ← AX |
+| `79h` | MOV | CX, BX | 1 | registro | CX ← BX |
+| `7Bh` | MOV | CX, DX | 1 | registro | CX ← DX |
+| `7Ch` | MOV | DX, AX | 1 | registro | DX ← AX |
+| `7Dh` | MOV | DX, BX | 1 | registro | DX ← BX |
+| `7Eh` | MOV | DX, CX | 1 | registro | DX ← CX |
+| `82h` | ADD | AX, CX | 1 | registro | AX ← AX + CX |
+| `83h` | ADD | AX, DX | 1 | registro | AX ← AX + DX |
+| `86h` | ADD | BX, CX | 1 | registro | BX ← BX + CX |
+| `87h` | ADD | BX, DX | 1 | registro | BX ← BX + DX |
+| `88h` | ADD | CX, AX | 1 | registro | CX ← CX + AX |
+| `89h` | ADD | CX, BX | 1 | registro | CX ← CX + BX |
+| `8Bh` | ADD | CX, DX | 1 | registro | CX ← CX + DX |
+| `8Ch` | ADD | DX, AX | 1 | registro | DX ← DX + AX |
+| `8Dh` | ADD | DX, BX | 1 | registro | DX ← DX + BX |
+| `8Eh` | ADD | DX, CX | 1 | registro | DX ← DX + CX |
+| `92h` | SUB | AX, CX | 1 | registro | AX ← AX − CX |
+| `93h` | SUB | AX, DX | 1 | registro | AX ← AX − DX |
+| `96h` | SUB | BX, CX | 1 | registro | BX ← BX − CX |
+| `97h` | SUB | BX, DX | 1 | registro | BX ← BX − DX |
+| `98h` | SUB | CX, AX | 1 | registro | CX ← CX − AX |
+| `99h` | SUB | CX, BX | 1 | registro | CX ← CX − BX |
+| `9Bh` | SUB | CX, DX | 1 | registro | CX ← CX − DX |
+| `9Ch` | SUB | DX, AX | 1 | registro | DX ← DX − AX |
+| `9Dh` | SUB | DX, BX | 1 | registro | DX ← DX − BX |
+| `9Eh` | SUB | DX, CX | 1 | registro | DX ← DX − CX |
+| `A2h` | CMP | AX, CX | 1 | registro | Banderas de AX − CX (no guarda) |
+| `A3h` | CMP | AX, DX | 1 | registro | Banderas de AX − DX (no guarda) |
+| `A6h` | CMP | BX, CX | 1 | registro | Banderas de BX − CX (no guarda) |
+| `A7h` | CMP | BX, DX | 1 | registro | Banderas de BX − DX (no guarda) |
+| `A8h` | CMP | CX, AX | 1 | registro | Banderas de CX − AX (no guarda) |
+| `A9h` | CMP | CX, BX | 1 | registro | Banderas de CX − BX (no guarda) |
+| `ABh` | CMP | CX, DX | 1 | registro | Banderas de CX − DX (no guarda) |
+| `ACh` | CMP | DX, AX | 1 | registro | Banderas de DX − AX (no guarda) |
+| `ADh` | CMP | DX, BX | 1 | registro | Banderas de DX − BX (no guarda) |
+| `AEh` | CMP | DX, CX | 1 | registro | Banderas de DX − CX (no guarda) |
+</details>
 
 ---
 
-## 7. Ensamblador y compilador
+## 8. Memoria virtual
+
+> ✍️ **Sección a cargo de Daniel Roca** (tareas 2-x). Completar en la tarea **2-9** con los casos de prueba de `docs/testing.md` y capturas de la hoja TablaMarcos.
+
+- **512 B virtuales** (16 páginas de 32 B) sobre **256 B de RAM** (8 marcos de 32 B). La hoja **Swap** guarda las 16 páginas (es el "disco").
+- **Tabla de marcos** (hoja **TablaMarcos**): una fila por página con `VPN`, `P` (presente), `PFN`, `Dirty` y `Ref`.
+- **Traducción** (`MMU.traducir`): `VPN = dir >> 5`, `offset = dir & 31`, `física = PFN × 32 + offset`. El panel muestra la última traducción y el Log guarda las 10 más recientes.
+- **Page Fault:** si `P = 0`, la entrada se resalta en rojo, se busca un marco libre (o una víctima), se copian 32 B desde el Swap, se pone `P = 1` y se **repite la micro-operación** (decisión D-7).
+- **Reemplazo FIFO o LRU** (seleccionable en la hoja TablaMarcos). Si la víctima tiene `Dirty = 1`, se escribe en el Swap antes de reemplazarla, y se invalida su caché. La página 15 (E/S) nunca se desaloja.
+- **Contadores** de fallos y desalojos.
+
+---
+
+## 9. Caché L1I / L1D / L2
+
+> ✍️ **Sección a cargo de Diego Andrade** (tareas 3-x). Completar en la tarea **3-10** con los casos de prueba y capturas de la hoja Cache_IO.
+
+- **Orden de acceso:** CPU → MMU → L1I (instrucciones) o L1D (datos) → L2 → RAM. La caché trabaja con **direcciones físicas**.
+- **L1I y L1D:** una línea de 8 B cada una. **L2:** 32 B (4 líneas de 8 B), compartida.
+- **Mapeo directo** y política de escritura **write-through** (escribe en L1D, L2 y RAM).
+- **Contadores** de hits y misses por nivel y **Hit Rate**. Cada acceso se pinta en verde (hit) o rojo (miss) en la hoja **Cache_IO** y se anota en el Log.
+- Los accesos a la página 15 (E/S) **no pasan por la caché**. Cargar un programa o desalojar una página invalida las líneas afectadas.
+
+---
+
+## 10. Periféricos de E/S
+
+> ✍️ **Sección a cargo de Diego Andrade** (tareas 3-5 a 3-7). Completar en la tarea **3-10**.
+
+| Dispositivo | Dirección virtual | Dirección física | Instrucción | Micro-palabra |
+|---|---|---|---|---|
+| **Teclado** (cola FIFO circular de 8 B) | `1F0h – 1F7h` | `F0h – F7h` | `IN r, [KBD]` | `IO` `Mem_R` `En_KBD` `Ld_MDR` |
+| **LCD 8x1** (buffer de 8 B) | `1F8h – 1FFh` | `F8h – FFh` | `OUT [LCD], r` | `IO` `Mem_W` `En_MDR` `Ld_LCD` |
+
+- En la hoja **Cache_IO** se escribe un carácter en el panel del teclado y queda en la cola; `IN` lo saca y lo deja en el registro.
+- `OUT` escribe un byte en el buffer del LCD y la pantalla de 8 caracteres se refresca.
+- Los dos usan el bus externo con la señal `IO = 1` y siempre pasan por el MDR.
+
+```asm
+.code
+IN  AX, [KBD]     ; AX ← carácter de la cola del teclado
+OUT [LCD], AX     ; eco en el LCD
+HLT
+```
+
+---
+
+## 11. Ensamblador y compilador
 
 ```mermaid
 flowchart LR
@@ -290,17 +488,19 @@ nivel** de la instrucción en curso (sigue los saltos).
 
 ---
 
-## 8. Manual de usuario
+## 12. Manual de usuario
 
 ### Instalación
-1. Crear una hoja de Google Sheets → **Extensiones → Apps Script**.
-2. Copiar los archivos de `src/` al editor (o usar `clasp push`, ver [`docs/setup.md`](docs/setup.md)). El panel va en un archivo HTML llamado **`Panel`**.
-3. Recargar la hoja → menú **Simulador CPU → Preparar libro** → aceptar permisos.
+1. En la raíz del repo: `node herramientas/construir.js` → genera `dist/SimuladorCompleto.gs` y `dist/Panel.html`.
+2. Crear una hoja de Google Sheets (región **Estados Unidos** en *Archivo → Configuración*) → **Extensiones → Apps Script**.
+3. Pegar `dist/SimuladorCompleto.gs`; para el panel lateral, crear un archivo HTML llamado **`Panel`** y pegar `dist/Panel.html`.
+4. Recargar la hoja → menú **Simulador CPU → Preparar libro** → aceptar permisos.
+
+O, más fácil: abrir el **enlace de la hoja** de arriba (termina en `/copy`) y hacer una copia, que ya trae el script.
 
 ### Uso con los controles de la hoja CPU
 
-En la hoja **CPU**, columna **P**, hay una columna de **controles**: cada uno es una casilla. Al marcarla se
-ejecuta la acción y la casilla se desmarca sola (funciona como un botón).
+En la hoja **CPU**, columna **P**, cada control es una casilla: al marcarla se ejecuta la acción y la casilla se desmarca sola.
 
 | Control | Acción |
 |---|---|
@@ -309,24 +509,27 @@ ejecuta la acción y la casilla se desmarca sola (funciona como un botón).
 | ⤓ ENSAMBLAR (col. E) | Ensambla el programa en ensamblador de la hoja Código |
 | ▶\| PASO | Ejecuta una micro-operación |
 | ⏭ INSTRUCCIÓN | Ejecuta la instrucción completa |
-| ▶ EJECUTAR | Ejecución continua, instrucción por instrucción, con el **Retardo (ms)** de la celda R14 |
+| ▶ EJECUTAR | Ejecución continua, instrucción por instrucción, con el **Retardo (ms)** configurable |
 | ❚❚ PAUSA | Detiene EJECUTAR al terminar la instrucción actual (se puede continuar) |
-| ↺ REINICIAR | Registros, banderas, log y colores en cero (la RAM se mantiene) |
+| ↺ REINICIAR | Registros, banderas, log, colores y buses en cero (la RAM se mantiene) |
 
-Debajo de los controles, un cuadro muestra el resultado de la última acción o el error.
+Los mismos comandos están en el menú **Simulador CPU** y en el panel lateral (**Simulador CPU → Abrir panel de control**).
 
-Los mismos comandos están en el menú **Simulador CPU** y en un panel lateral opcional
-(**Simulador CPU → Abrir panel de control**).
+### Hojas del libro
 
-### Qué mirar
-- **Hoja CPU:** registros, fase activa, micro-operación, últimas 10 micro-operaciones.
-  🟨 **Ámbar** = destino · 🟦 **Celeste** = origen.
-- **Hoja RAM:** la celda que se lee o escribe se ilumina.
-- **Hoja Log:** `[Paso NN] · #instrucción · fase · micro-operación · detalle`.
-- **Hoja Compilador:** tokens, AST, ensamblador generado, tabla de símbolos y listado de código máquina.
-- **Hoja Código:** la línea en ejecución (ensamblador y alto nivel) resaltada en ámbar.
-- **Hoja Inicio:** portada con el logo y el equipo, guía de controles y leyenda de colores.
-- **Hoja Buses:** buffers tri-estado, buses interno/externo, de direcciones y de control, y la micro-palabra de cada paso.
+| Hoja | Qué muestra |
+|---|---|
+| **Inicio** | Portada: logo, equipo, guía de controles y leyenda de colores |
+| **CPU** | Registros, fase, micro-operación, últimas 10 micro-operaciones y controles |
+| **Buses** | Buffers tri-estado, buses interno / externo / direcciones / control y los 30 bits de la micro-palabra |
+| **RAM** | Memoria física en 8 marcos de 32 B + inspector |
+| **Código** | Programa en alto nivel (col. B) y en ensamblador (col. E), con la línea en ejecución resaltada |
+| **Compilador** | Tokens, AST, ensamblador generado, símbolos y código máquina |
+| **Log** | `[Paso NN]` · instrucción · fase · micro-operación · detalle · **micro-palabra** · **bits** |
+| **ISA** | Las 100 instrucciones |
+| **Cache_IO** | L1I, L1D, L2, contadores y Hit Rate, teclado y LCD |
+| **Swap** | Las 16 páginas virtuales de 32 B |
+| **TablaMarcos** | Tabla de páginas (P, PFN, Dirty, Ref), última traducción, FIFO / LRU y contadores de fallos |
 
 ### Leyenda de colores
 La misma leyenda está en la hoja **Inicio** y, compacta, en la hoja **CPU** debajo de los controles.
@@ -345,17 +548,29 @@ La misma leyenda está en la hoja **Inicio** y, compacta, en la hoja **CPU** deb
 ### Menú Simulador CPU
 | Opción | Acción |
 |---|---|
-| Cargar programa demo (5 × 3) | Escribe el demo en ensamblador en la hoja Código, lo ensambla y lo carga |
-| Cargar demo de alto nivel (5 × 3) | Escribe el demo en alto nivel, lo compila y lo carga |
-| Compilar alto nivel y cargar | Compila la columna B, escribe el ensamblador en la columna E y lo carga |
-| Ensamblar y cargar programa | Ensambla la hoja Código y la carga en RAM |
+| Preparar libro | Construye (o reconstruye) todas las hojas |
+| Cargar programa demo / demo de alto nivel | Escribe el demo en la hoja Código y lo carga |
+| Compilar alto nivel y cargar · Ensamblar y cargar programa | Carga lo que esté escrito en la hoja Código |
 | Paso / Ejecutar instrucción / Ejecutar hasta HLT | Ejecución por micro-operación, por instrucción o completa |
-| Reiniciar CPU | Registros, banderas, log y ciclo desde cero |
-| Pruebas → Ejecutar todas | Corre las 102 pruebas automáticas |
+| Reiniciar CPU · Limpiar RAM | Vuelven el CPU o la RAM a cero |
+| Pruebas → Ejecutar todas | Corre todas las pruebas automáticas ([sección 14](#14-pruebas)) |
 
 ---
 
-## 9. Programa demostrativo y traza
+## 13. Programas
+
+### Catálogo de programas
+
+> ✍️ **Sección a cargo de Diego Andrade** (tarea 3-8). Completar con los 3 programas de la hoja **Programas**:
+> (1) aritmético con bucles usando AX, BX, CX y DX · (2) teclado con eco al LCD · (3) accesos dispersos que provocan Page Faults y fallos de caché.
+
+| # | Programa | Qué demuestra |
+|---|---|---|
+| 1 | _pendiente_ | Bucles y los 4 registros |
+| 2 | _pendiente_ | `IN` / `OUT` con teclado y LCD |
+| 3 | _pendiente_ | Page Fault, reemplazo y misses de caché |
+
+### Programa demostrativo del Parcial 1 y traza
 
 **Multiplicación por sumas sucesivas:** `res = a × b` sumando `a` tantas veces como indica `b`.
 Usa un bucle (`JMP`), una bifurcación condicional (`CMP` + `JZ`), lectura/escritura en memoria y `HLT`.
@@ -495,87 +710,116 @@ _f1:
 
 ---
 
-## 10. Pruebas
+## 14. Pruebas
 
-Menú **Simulador CPU → Pruebas → Ejecutar todas** → **102/102 aprobadas**.
+Menú **Simulador CPU → Pruebas → Ejecutar todas** → **258/258 aprobadas** (también en Node: `node herramientas/probar-local.js`).
 
 | Suite | Pruebas | Qué cubre |
 |---|---|---|
-| Memoria | 10 | lectura/escritura, conversión hex/bin, mapeo, segmentos, rangos |
-| Registros | 5 | lectura/escritura, validación, banderas, reinicio |
-| ALU | 18 | ADD, SUB, INC, DEC, AND, OR, XOR, NOT, CMP y sus banderas |
-| ISA | 7 | opcodes únicos, instrucciones mínimas, búsqueda, formato |
-| Bus | 6 | fase de búsqueda de la lámina, escritura en RAM, suscriptores |
-| Ensamblador | 12 | léxico, dos pasadas, variables, errores, carga en RAM |
-| Unidad de control | 11 | fases, operandos, LOAD/STORE, ALU, saltos, HLT, opcode inválido |
-| Simulación | 12 | log, panel, resaltado, panel lateral, carga con errores, controles PASO/EJECUTAR/PAUSA |
-| Casos borde | 11 | desbordamiento, negativos, ambas ramas de saltos, demo en ensamblador y en alto nivel |
-| Compilador y traza | 10 | léxico, AST, generación de código, errores, demo compilado, traza |
+| Memoria | 11 | lectura/escritura, conversión hex/bin, segmentos, rangos |
+| Acceso a memoria | 16 | contrato `AccesoMemoria.leer/escribir`, tipos I/D, contratos de MMU, caché y periféricos |
+| Registros | 8 | lectura/escritura, validación, banderas, reinicio |
+| Registros CX y DX | 15 | MOV, LOAD, STORE, ADD, SUB, INC, DEC y CMP con CX y DX en el CPU completo |
+| ALU | 18 | operaciones aritméticas y lógicas y sus banderas |
+| ISA | 15 | opcodes únicos, 100 instrucciones, búsqueda, formato |
+| Micro-palabra | 23 | formato de 30 bits, `ALU_op`, regla de un solo emisor, micro-palabra de las 100 instrucciones |
+| Bus | 21 | buses interno/externo, CONDUCE/HIGH-Z, conexiones inválidas, transferencias |
+| Vista de buses | 10 | hoja Buses: colores de buffers, línea del bus, bits por micro-paso |
+| Identidad y controles | 11 | portada, leyenda, PASO / EJECUTAR / PAUSA / REINICIAR con todos los módulos |
+| Ensamblador | 16 | léxico, dos pasadas, variables, errores, carga |
+| Unidad de control | 18 | fases, operandos, saltos, HLT, micro-palabra emitida y validada en cada paso |
+| Simulación | 13 | log (con micro-palabra), panel, resaltado, controles |
+| Swap · Tabla de marcos · MMU | 6 · 7 · 7 | almacenamiento virtual, entradas P/PFN/Dirty/Ref, traducción |
+| Page Fault · Reemplazo FIFO/LRU · Visualización | 7 · 7 · 7 | carga desde swap y reintento, víctima, dirty write-back, colores y contadores |
+| Casos borde | 11 | desbordamiento, negativos, ambas ramas de saltos, demos |
+| Compilador y traza | 11 | léxico, AST, generación de código, errores, traza |
+
+Pruebas adicionales de caché y E/S (menú *Pruebas* o desde Apps Script): `probarJerarquiaCache`, `probarIntegracionCache`,
+`probarAnimacionCache`, `probarTecladoFIFO`, `probarLCD`, `probarInOut`.
 
 ---
 
-## 11. Estructura del código
+## 15. Estructura del código
 
 ```
 src/
 ├── appsscript.json        manifiesto (motor V8)
 ├── Configuracion.gs       hojas, mapa de memoria, colores
-├── Memoria.gs             RAM: leer, escribir, volcar, cargar, limpiar
-├── VistaRam.gs            matriz 16×16, segmentos, inspector
-├── Registros.gs           PC, IR, MAR, MDR, AX, BX, REN1/2, banderas
+├── Identidad.gs           portada "Los Tigris", logo y leyenda de colores
+├── Memoria.gs             RAM física: leer, escribir, volcar, cargar, limpiar
+├── VistaRam.gs            RAM en 8 marcos de 32 B, segmentos, inspector
+├── AccesoMemoria.gs       contrato único de memoria: MMU → caché → RAM
+├── MMU.gs                 traducción de direcciones virtuales de 9 bits
+├── TablaMarcos.gs         tabla de páginas (P, PFN, Dirty, Ref)
+├── ManejadorFallos.gs     Page Fault, reemplazo FIFO / LRU, dirty write-back
+├── Swap.gs                almacenamiento virtual de 16 páginas
+├── Cache.gs               motor de caché L1I / L1D / L2
+├── VistaCache.gs          hoja Cache_IO
+├── VistaCacheActividad.gs animación de hit / miss
+├── Perifericos.gs         teclado FIFO y LCD 8x1
+├── Registros.gs           PC, IR, MAR, MDR, AX, BX, CX, DX, REN1/2, banderas
 ├── ALU.gs                 operaciones aritméticas y lógicas + banderas
 ├── ISA.gs                 tabla de instrucciones (única fuente de verdad)
-├── Bus.gs                 transferencias entre registros y RAM
+├── MicroPalabra.gs        formato de la micro-palabra y reglas tri-estado
+├── Bus.gs                 buses interno/externo, direcciones y control; buffers
+├── VistaBuses.gs          hoja Buses
 ├── EnsambladorLexico.gs   análisis léxico
 ├── Ensamblador.gs         ensamblador de dos pasadas
-├── VistaCompilador.gs     etapas de compilación, símbolos, listado y errores en la hoja
-├── Compilador.gs          compilador de alto nivel: léxico, parser (AST) y generación de código
-├── Traza.gs               resalta la línea de ensamblador y de alto nivel en ejecución
-├── MicroOperaciones.gs    micro-operaciones de cada instrucción (secuenciador)
+├── Compilador.gs          compilador de alto nivel
+├── VistaCompilador.gs     etapas de compilación en la hoja
+├── Traza.gs               línea de ensamblador y de alto nivel en ejecución
+├── MicroOperaciones.gs    micro-operaciones y micro-palabra de cada instrucción
 ├── UnidadControl.gs       ciclo de instrucción, una micro-operación por paso
 ├── LogMicroops.gs         hoja Log y panel de la hoja CPU
 ├── Resaltado.gs           colores de origen, destino y fase
 ├── Simulacion.gs          fachada para los controles, el menú y el panel lateral
-├── Controles.gs           controles de la hoja CPU (casillas PASO, EJECUTAR, PAUSA…)
-├── ProgramasDemo.gs       programa demostrativo
+├── Controles.gs           controles de la hoja CPU (PASO, EJECUTAR, PAUSA…)
+├── ProgramasDemo.gs       programas demostrativos
 ├── Libro.gs               construcción de las hojas y rangos con nombre
 ├── Principal.gs           menú y activadores
-├── Panel.html             panel lateral (COMPILAR, ENSAMBLAR, DEMO, PASO, EJECUTAR, PAUSA, REINICIAR)
-└── pruebas/               102 pruebas automáticas
+├── Panel.html             panel lateral
+└── pruebas/               pruebas automáticas
+herramientas/              construir.js (une src/ en dist/) · probar-local.js (pruebas en Node)
+docs/                      especificaciones: micro-palabra, buses, acceso a memoria, ISA CX/DX
+assets/                    logo del equipo
 ```
 
 Convención: nombres en español; se mantienen en inglés solo los nombres técnicos estándar
-(PC, IR, MAR, MDR, AX, BX, ZF, CF, SF, mnemónicos y la API de Apps Script).
+(PC, IR, MAR, MDR, AX…, señales de la micro-palabra, mnemónicos y la API de Apps Script).
 
 ---
 
-## 12. Decisiones de diseño
+## 16. Decisiones de diseño
 
-- **La hoja es la fuente de verdad:** registros y RAM viven en celdas, así se pueden modificar en vivo durante la ejecución.
-- **Instrucciones de 1 o 2 bytes:** el operando se busca en la decodificación a través de MAR/MDR, como cualquier otro acceso a memoria.
-- **PC + 1 antes de decodificar**, como indica el enunciado (en la lámina de clase el orden de los pasos 4 y 5 es inverso).
-- **Banderas con una regla uniforme:** toda operación de la ALU recalcula ZF, CF y SF. A diferencia de x86, `INC`/`DEC` también actualizan CF; las operaciones lógicas dejan CF en 0.
-- **Sin `ADD` con operando en memoria:** con solo AX y BX, el demo guarda el acumulado y el contador en RAM. Es más largo, pero muestra claramente el uso de MAR/MDR.
-- **Estado de la Unidad de Control en `PropertiesService`:** Apps Script no conserva variables entre llamadas; la cola de micro-operaciones pendientes se guarda en las propiedades del documento.
-- **Controles dentro de la hoja:** casillas atendidas por un activador instalable `onEdit` (un activador simple solo dura 30 s). EJECUTAR corre en su propia ejecución y revisa en cada instrucción una propiedad que PAUSA pone en 1; se detiene solo antes del límite de 6 minutos de Apps Script y se puede continuar.
-- **Rendimiento:** los rangos de los registros se guardan en caché y el log se escribe en bloque.
-- **El compilador genera ensamblador, no bytes:** reutiliza el ensamblador existente y deja visible el código intermedio, con comentarios que indican de qué línea de alto nivel viene cada instrucción.
+| # | Decisión |
+|---|---|
+| D-1 | **Espacio virtual de 9 bits** (000h–1FFh): páginas 0–7 código, 8–15 datos. El PC sigue siendo de 8 bits y los operandos `[dir]` apuntan a `100h + dir`. |
+| D-2 | **Traducción** `VPN = dir >> 5`, `offset = dir & 31`, `física = PFN × 32 + offset`. |
+| D-3 | **E/S en la página 15**, fija en el marco 7, sin caché: teclado `1F0h–1F7h`, LCD `1F8h–1FFh`. |
+| D-4 | **Orden de acceso** CPU → MMU → L1 → L2 → RAM; la caché usa direcciones físicas. |
+| D-5 | **Caché** L1I y L1D de 8 B, L2 de 32 B, write-through; un desalojo invalida la caché de esa página. |
+| D-6 | **Reemplazo FIFO** por defecto y **LRU** seleccionable; víctima con Dirty = 1 se guarda en el Swap. |
+| D-7 | **Page Fault reinicia la micro-operación** que falló, sin avanzar el PC. |
+| D-8 | **Tri-estado:** como máximo un `En_*` por micro-paso; se valida por código antes de ejecutar el paso. |
+| D-9 | **Contrato único de memoria:** el CPU solo usa `AccesoMemoria.leer/escribir`; nadie más toca la RAM. |
 
----
-
-## 13. Gestión del proyecto
-
-- **Tablero Kanban** en GitHub Projects: Backlog → To Do → In Progress → In Review / Testing → Done.
-- **Una rama por tarea** (`feat/assembler`, `feat/control-unit`, …) y **Pull Request** con `Closes #N`.
-- **Commits convencionales** en español: `feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `perf:`, `chore:`.
-- Cada módulo tiene sus pruebas automáticas y cada PR indica cómo probarlo.
+Además, del Parcial 1: la hoja es la fuente de verdad (registros y RAM viven en celdas); instrucciones de 1 o 2 bytes;
+`PC + 1` antes de decodificar; el estado de la Unidad de Control se guarda en `PropertiesService`; los controles son casillas
+atendidas por un activador `onEdit` instalable, y EJECUTAR se detiene antes del límite de 6 minutos de Apps Script.
 
 ---
 
-## 14. Extensión para el Parcial 2
+## 17. Gestión del proyecto y contribuciones
 
-El código está desacoplado para crecer sin reescribir el CPU:
+- **Tablero Kanban** en GitHub Projects: Backlog → To Do → In Progress → In Review → Done. Cada tarjeta tiene *By · For · Reason · Details · Acceptance criteria*.
+- **Gitflow:** una rama por tarea `feature/<nombre>/<módulo>`, **Pull Request** con `Closes #N` y revisión de otro integrante antes del merge.
+- **Commits convencionales** en español: `feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`.
+- **Integración** conjunta al final de los días 3, 5 y 7: la hoja del equipo se actualiza con el `dist/` del último `main`.
 
-- **Bus multiplexado:** todo movimiento de datos ya pasa por `Bus.transferir()`; se reemplaza su interior por líneas de dirección, datos y control.
-- **Entrada/Salida:** nuevos dispositivos conectados al bus y nuevas instrucciones en `TABLA_ISA` + `MicroOperaciones.planificar`.
-- **Interrupciones:** la Unidad de Control ya trabaja con una cola de micro-operaciones, donde se puede insertar la rutina de atención.
+| Integrante | Módulos | Secciones de este README |
+|---|---|---|
+| **Adrian Rada** | Repo y Kanban, contrato de memoria, CX/DX e ISA, micro-palabra, buses tri-estado, Unidad de Control, vista de buses, identidad y controles, README | 1–7, 11–12, 14–17 |
+| **Daniel Roca** | RAM en marcos, Swap, tabla de marcos, MMU, Page Fault, FIFO/LRU, cargador | 8 (y casos de prueba en `docs/testing.md`) |
+| **Diego Andrade** | Paneles de caché y E/S, motor de caché, integración con memoria, animación hit/miss, teclado, LCD, `IN`/`OUT`, catálogo y editor | 9, 10, 13 |
+
+Cada integrante completa **su sección en los dos idiomas** (este archivo y [`README_EN.md`](README_EN.md)).
