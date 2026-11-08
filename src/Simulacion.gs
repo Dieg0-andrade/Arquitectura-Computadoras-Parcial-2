@@ -89,8 +89,11 @@ const Simulacion = {
     });
   },
 
-  cargar_(mapaAlto) {
-    const resultado = Ensamblador.ensamblar(Ensamblador.leerFuente());
+  cargar_(mapaAlto, virtual) {
+    const resultado = Ensamblador.ensamblar(
+  Ensamblador.leerFuente(),
+  { virtual: Boolean(virtual) }
+);
     VistaCompilador.mostrarEnsamblado(resultado);
     if (!resultado.ok) {
       return {
@@ -103,7 +106,9 @@ const Simulacion = {
     Traza.guardarMapaFuente(resultado.listado);
     Traza.guardarMapaAlto(mapaAlto);
     Simulacion.reiniciar();
-    const codigo = resultado.listado.filter(l => l.direccion <= MAPA_MEMORIA.CODIGO_FIN);
+    const codigo = resultado.listado.filter(
+  l => l.direccion <= (virtual ? 0xFF : MAPA_MEMORIA.CODIGO_FIN)
+);
     const ultimo = codigo[codigo.length - 1];
     const tamano = ultimo ? ultimo.direccion + ultimo.bytes.length : 0;
     return {

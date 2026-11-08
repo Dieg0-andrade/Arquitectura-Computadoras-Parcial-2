@@ -20,10 +20,31 @@ const SALTOS = ['JMP', 'JZ', 'JNZ'];
 
 const Ensamblador = {
 
-  ensamblar(lineas) {
+  
+  CLAVE_MODO_VIRTUAL: 'ENSAMBLADOR_DATOS_VIRTUALES',
+
+  modoVirtualActivo() {
+    return PropertiesService.getDocumentProperties()
+      .getProperty(Ensamblador.CLAVE_MODO_VIRTUAL) === '1';
+  },
+
+  activarModoVirtual(activo) {
+    PropertiesService.getDocumentProperties()
+      .setProperty(
+        Ensamblador.CLAVE_MODO_VIRTUAL,
+        activo ? '1' : '0'
+      );
+
+    MMU.activarMemoriaVirtual(Boolean(activo));
+  },
+
+
+  ensamblar(lineas, opciones) {
+  const virtual = Boolean(opciones && opciones.virtual);
     const res = {
       ok: false, errores: [], simbolos: [], listado: [], tokens: [],
-      memoria: new Array(MAPA_MEMORIA.TAMANO).fill(0)
+      memoria: new Array(virtual ? 512 : MAPA_MEMORIA.TAMANO).fill(0),
+      virtual: virtual
     };
     const error = (linea, mensaje) => res.errores.push({ linea: linea, mensaje: mensaje });
 
@@ -45,7 +66,7 @@ const Ensamblador = {
     const tabla = {};
     let seccion = 'code';
     let dirCodigo = MAPA_MEMORIA.CODIGO_INICIO;
-    let dirDatos = MAPA_MEMORIA.DATOS_INICIO;
+    let dirDatos = virtual ? 0x100 : MAPA_MEMORIA.DATOS_INICIO;
 
     const definir = (nombre, tipo, direccion, linea) => {
       if (tabla[nombre]) return error(linea, 'Símbolo duplicado: ' + nombre);
@@ -62,7 +83,11 @@ const Ensamblador = {
           definir(s.dato.nombre, 'variable', dirDatos, s.linea);
           s.direccion = dirDatos;
           dirDatos += s.dato.valores.length;
-          if (dirDatos - 1 > MAPA_MEMORIA.DATOS_FIN) error(s.linea, 'El segmento de datos pasa de FFh');
+          if (dirDatos - 1 > (virtual ? 0x1DF : MAPA_MEMORIA.DATOS_FIN)) {
+             error(s.linea, virtual
+                   ? 'El segmento de datos supera 1DFh (VPN 15 reservada para E/S)'
+                   : 'El segmento de datos pasa de FFh');
+}
         }
         return;
       }
@@ -77,7 +102,11 @@ const Ensamblador = {
         }
         s.direccion = dirCodigo;
         dirCodigo += s.entrada.bytes;
-        if (dirCodigo - 1 > MAPA_MEMORIA.CODIGO_FIN) error(s.linea, 'El programa pasa de 7Fh (segmento de código lleno)');
+        if (dirCodigo - 1 > (virtual ? 0xFF : MAPA_MEMORIA.CODIGO_FIN)) {
+            error(s.linea, virtual
+                  ? 'El programa supera 0FFh (paginas de codigo llenas)'
+                  : 'El programa pasa de 7Fh (segmento de código lleno)');
+}
       }
     });
 
@@ -95,7 +124,13 @@ const Ensamblador = {
       if (s.entrada.bytes === 2) {
         const op = s.operandos.find(o => o.tipo === 'INM' || o.tipo === 'MEM' || o.tipo === 'DIR' || o.tipo === 'KBD' || o.tipo === 'LCD');
         const valor = Ensamblador.resolver_(op, tabla, s.linea, error);
-        bytes.push(valor === null ? 0 : valor);
+        if (valor === null) {
+            bytes.push(0);
+            } else if (virtual && op.tipo === 'MEM' && valor >= 0x100) {
+               bytes.push(valor - 0x100);
+            } else {
+               bytes.push(valor);
+            }
       }
       bytes.forEach((b, i) => { res.memoria[s.direccion + i] = b; });
       res.listado.push({ direccion: s.direccion, bytes: bytes, fuente: s.fuente, linea: s.linea });
@@ -209,9 +244,121 @@ const Ensamblador = {
     return hoja.getRange(4, 5, 100, 1).getDisplayValues().map(f => f[0]);
   },
 
-  /** Carga en RAM los 256 bytes del resultado (código y datos). */
+  
+  /**
+   * Carga el programa en memoria.
+   * Los programas antiguos mantienen el modo RAM plana.
+   */
   cargarEnMemoria(resultado) {
-    if (!resultado.ok) throw new Error('No se puede cargar un programa con errores');
-    Memoria.cargar(0, resultado.memoria);
+    if (!resultado.ok) {
+      throw new Error('No se puede cargar un programa con errores');
+    }
+
+    if (!resultado.virtual) {
+      Ensamblador.activarModoVirtual(false);
+      Memoria.cargar(0, resultado.memoria);
+      Cache.invalidarTodo();
+      return;
+    }
+
+    return Ensamblador.cargarVirtual_(resultado);
+  },
+
+  /**
+   * Guarda 512 bytes en Swap y precarga en RAM
+   * las paginas mas utiles para iniciar el programa.
+   */
+  cargarVirtual_(resultado) {
+    const imagen = resultado.memoria;
+
+    if (!Array.isArray(imagen) || imagen.length !== 512) {
+      throw new Error('La imagen virtual debe tener 512 bytes');
+    }
+
+    // Guardar las paginas 0 a 14 en Swap.
+    // VPN 15 queda reservada para entrada/salida.
+    for (let vpn = 0; vpn < 15; vpn++) {
+      const inicio = vpn * 32;
+      Swap.escribirPagina(
+        vpn,
+        imagen.slice(inicio, inicio + 32)
+      );
+    }
+
+    // Invalidar cache y restablecer tabla de paginas.
+    Cache.invalidarTodo();
+
+    const filas = [];
+
+    for (let vpn = 0; vpn < 16; vpn++) {
+      filas.push([
+        vpn,
+        vpn === 15 ? 1 : 0,
+        vpn === 15 ? 7 : '',
+        0,
+        0
+      ]);
+    }
+
+    TablaMarcos.rango_().setValues(filas);
+    ManejadorFallos.reiniciar();
+
+    // Limpiar PFN 0 a 6 sin tocar el PFN 7 de E/S.
+    Memoria.cargar(0, new Array(224).fill(0));
+
+    // Identificar las paginas utilizadas por el programa.
+    const usadas = new Set([0]);
+
+    resultado.listado.forEach(entrada => {
+      for (let i = 0; i < entrada.bytes.length; i++) {
+        const vpn = Math.floor(
+          (entrada.direccion + i) / 32
+        );
+
+        if (vpn >= 0 && vpn < 15) {
+          usadas.add(vpn);
+        }
+      }
+    });
+
+    // Priorizar el inicio del codigo y los datos.
+    const prioridad = vpn => {
+      if (vpn === 0) return -1;
+      if (vpn >= 8) return vpn - 8;
+      return vpn + 20;
+    };
+
+    const paginas = Array.from(usadas)
+      .sort((a, b) => prioridad(a) - prioridad(b));
+
+    let marco = 0;
+
+    paginas.forEach(vpn => {
+      if (marco >= 7) return;
+
+      const inicio = vpn * 32;
+      const bytes = imagen.slice(inicio, inicio + 32);
+
+      Memoria.cargar(marco * 32, bytes);
+
+      TablaMarcos.actualizar(vpn, {
+        presente: 1,
+        pfn: marco,
+        dirty: 0,
+        ref: 0
+      });
+
+      // Registrar carga inicial sin generar Page Fault.
+      ManejadorFallos.registrarCarga(vpn);
+
+      marco++;
+    });
+
+    Ensamblador.activarModoVirtual(true);
+
+    return {
+      paginasPrecargadas: paginas.slice(0, marco),
+      marcosUtilizados: marco
+    };
   }
 };

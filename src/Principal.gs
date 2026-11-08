@@ -14,6 +14,7 @@ function onOpen() {
     .addItem('Cargar demo de alto nivel (5 × 3)', 'menuCargarDemoAlto')
     .addItem('Compilar alto nivel y cargar', 'menuCompilar')
     .addItem('Ensamblar y cargar programa', 'menuEnsamblar')
+    .addItem('Ensamblar en memoria virtual', 'menuEnsamblarVirtual')
     .addItem('Paso (una micro-operación)', 'menuPaso')
     .addItem('Ejecutar instrucción completa', 'menuEjecutarInstruccion')
     .addItem('Ejecutar hasta HLT', 'menuEjecutarHastaDetener')
@@ -37,6 +38,7 @@ function onOpen() {
       .addItem('Vista de buses', 'probarVistaBuses')
       .addItem('Identidad y controles', 'probarIdentidad')
       .addItem('Ensamblador', 'probarEnsamblador')
+      .addItem('Cargador virtual', 'probarCargaVirtual')
       .addItem('Unidad de control', 'probarUnidadControl')
       .addItem('Simulación', 'probarSimulacion')
       .addItem('Casos borde', 'probarBorde')
@@ -113,3 +115,27 @@ function menuActualizarIsa() {
   ISA.escribirEnHoja();
   SpreadsheetApp.getActive().toast('Tabla ISA actualizada (' + TABLA_ISA.length + ' instrucciones).', 'ISA', 3);
 }
+
+/**
+ * Ensambla y carga el programa de la hoja Codigo
+ * utilizando las paginas virtuales y Swap.
+ */
+function menuEnsamblarVirtual() {
+  const resultado = Simulacion.cargar_(null, true);
+
+  if (!resultado.ok) {
+    SpreadsheetApp.getUi().alert(
+      'Errores de ensamblado',
+      resultado.errores.join('\n'),
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+    return;
+  }
+
+  SpreadsheetApp.getActive().toast(
+    'Programa cargado en memoria virtual y Swap.',
+    'Cargador virtual',
+    5
+  );
+}
+

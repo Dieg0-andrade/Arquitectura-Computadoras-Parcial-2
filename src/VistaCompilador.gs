@@ -18,11 +18,13 @@ const VistaCompilador = {
       resultado.tokens.map(t => [t.linea, t.tipo, t.texto]));
 
     VistaCompilador.escribirTabla_(hoja, 10, 3,
-      resultado.simbolos.map(s => [s.nombre, s.tipo, UtilMemoria.aHex(s.direccion) + 'h']));
+      resultado.simbolos.map(s => [s.nombre, s.tipo, s.direccion.toString(16).toUpperCase()
+  .padStart(resultado.virtual ? 3 : 2, '0') + 'h']));
 
     VistaCompilador.escribirTabla_(hoja, 14, 4,
       resultado.listado.map(l => [
-        UtilMemoria.aHex(l.direccion) + 'h',
+        l.direccion.toString(16).toUpperCase()
+  .padStart(resultado.virtual ? 3 : 2, '0') + 'h',
         l.bytes.map(UtilMemoria.aHex).join(' '),
         l.bytes.map(UtilMemoria.aBin).join(' '),
         l.fuente
