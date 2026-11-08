@@ -6,6 +6,7 @@
  */
 
 const HOJAS = {
+  INICIO: 'Inicio',
   CPU: 'CPU',
   BUSES: 'Buses',
   RAM: 'RAM',
