@@ -146,5 +146,6 @@ const Controles = {
 /** Activador instalable onEdit (lo crea prepararLibro). */
 function alEditarControles(e) {
   if (!e || !e.range) return;
+  if (Editor.atender(e)) return;
   Controles.atender(e);
 }
