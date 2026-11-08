@@ -71,6 +71,7 @@ function prepararLibro() {
   Perifericos.teclado.reiniciar();
   ISA.escribirEnHoja();
   ProgramasCatalogo.construir();
+  Editor.construir();
 
   try {
     Controles.instalarActivador();
