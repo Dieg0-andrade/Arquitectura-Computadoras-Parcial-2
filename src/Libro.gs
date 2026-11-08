@@ -70,6 +70,7 @@ function prepararLibro() {
   ManejadorFallos.reiniciar();
   Perifericos.teclado.reiniciar();
   ISA.escribirEnHoja();
+  ProgramasCatalogo.construir();
 
   try {
     Controles.instalarActivador();
