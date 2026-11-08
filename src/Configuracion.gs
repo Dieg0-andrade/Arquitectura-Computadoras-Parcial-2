@@ -16,6 +16,7 @@ const HOJAS = {
   ISA: 'ISA',
   CACHE_IO: 'Cache_IO',
   SWAP: 'Swap',
+  PROGRAMAS: 'Programas',
   TABLA_MARCOS: 'TablaMarcos'
 };
 
