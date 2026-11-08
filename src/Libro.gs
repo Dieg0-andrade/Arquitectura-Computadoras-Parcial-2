@@ -31,6 +31,7 @@ function prepararLibro() {
   }
 
   const orden = [
+  HOJAS.INICIO,
   HOJAS.CPU,
   HOJAS.BUSES,
   HOJAS.RAM,
@@ -52,7 +53,9 @@ function prepararLibro() {
 
   ss.getNamedRanges().forEach(nr => nr.remove());
 
+  Identidad.construirPortada(ss.getSheetByName(HOJAS.INICIO));
   VistaCpu.construir(ss.getSheetByName(HOJAS.CPU));
+  Identidad.agregarAHojaCpu(ss.getSheetByName(HOJAS.CPU));
   VistaBuses.construir(ss.getSheetByName(HOJAS.BUSES));
   VistaRam.construir(ss.getSheetByName(HOJAS.RAM));
   Diseno.construirCodigo(ss.getSheetByName(HOJAS.CODIGO));

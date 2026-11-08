@@ -35,6 +35,7 @@ function onOpen() {
       .addItem('Micro-palabra', 'probarMicroPalabra')
       .addItem('Bus', 'probarBus')
       .addItem('Vista de buses', 'probarVistaBuses')
+      .addItem('Identidad y controles', 'probarIdentidad')
       .addItem('Ensamblador', 'probarEnsamblador')
       .addItem('Unidad de control', 'probarUnidadControl')
       .addItem('Simulación', 'probarSimulacion')

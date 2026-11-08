@@ -1,10 +1,16 @@
 # Simulador de CPU · Arquitectura von Neumann de 8 bits
 
+<p align="center">
+  <img src="assets/logo-los-tigris.jpg" alt="Logo del equipo Los Tigris" width="280"><br>
+  <b>Equipo: Los Tigris</b>
+</p>
+
 Simulador interactivo del **ciclo de instrucción completo** y de la **memoria principal** de una computadora
 von Neumann de 8 bits, construido en **Google Sheets + Google Apps Script**.
 
 - **Materia:** Arquitectura de Computadoras (SIS-131) · Universidad Católica Boliviana "San Pablo", Santa Cruz
 - **Docente:** Ing. Paulo César Loayza Carrasco
+- **Equipo:** Los Tigris
 - **Estudiantes:**
 - Adrian Rada
 - Diego Andrade
@@ -319,6 +325,22 @@ Los mismos comandos están en el menú **Simulador CPU** y en un panel lateral o
 - **Hoja Log:** `[Paso NN] · #instrucción · fase · micro-operación · detalle`.
 - **Hoja Compilador:** tokens, AST, ensamblador generado, tabla de símbolos y listado de código máquina.
 - **Hoja Código:** la línea en ejecución (ensamblador y alto nivel) resaltada en ámbar.
+- **Hoja Inicio:** portada con el logo y el equipo, guía de controles y leyenda de colores.
+- **Hoja Buses:** buffers tri-estado, buses interno/externo, de direcciones y de control, y la micro-palabra de cada paso.
+
+### Leyenda de colores
+La misma leyenda está en la hoja **Inicio** y, compacta, en la hoja **CPU** debajo de los controles.
+
+| Color | Significado |
+|---|---|
+| 🟨 Ámbar | Destino de la transferencia · componente que carga (`Ld_*`) · bit de la micro-palabra en 1 |
+| 🟦 Celeste | Origen de la transferencia |
+| 🟩 Verde | Buffer tri-estado que **conduce** · bus activo |
+| ⬜ Gris | Buffer en **HIGH-Z** · bus o componente en reposo |
+| 🟢 Verde claro | Hit de caché |
+| 🟥 Rojo claro | Miss de caché · Page Fault |
+| Azul claro / verde menta | Segmento de código / de datos en la RAM |
+| Crema | Celda editable (entrada del usuario) |
 
 ### Menú Simulador CPU
 | Opción | Acción |
