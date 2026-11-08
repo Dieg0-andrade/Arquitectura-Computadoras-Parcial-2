@@ -77,6 +77,63 @@ function suiteCargaVirtual_() {
     t.igual(r.errores[0].linea, 2);
   });
 
+  
+  t.prueba('Rechaza operandos mayores a 8 bits', () => {
+    const r = Ensamblador.ensamblar([
+      '.data',
+      'x DB 7',
+      '.code',
+      'MOV AX, x',
+      'HLT'
+    ], { virtual: true });
+
+    t.igual(r.ok, false);
+    t.igual(r.errores[0].linea, 4);
+    t.igual(
+      r.errores[0].mensaje.includes('8 bits'),
+      true
+    );
+  });
+
+  t.prueba('Traza codigo virtual desde 80h', () => {
+    const lineas = new Array(65).fill('MOV AX, 5');
+    lineas.push('HLT');
+
+    const r = Ensamblador.ensamblar(
+      lineas, { virtual: true }
+    );
+
+    t.igual(r.ok, true);
+
+    const propiedades =
+      PropertiesService.getDocumentProperties();
+
+    const mapaAnterior =
+      propiedades.getProperty(CLAVE_MAPA_FUENTE);
+
+    try {
+      Traza.guardarMapaFuente(r.listado, true);
+
+      t.igual(
+        Traza.lineasDe(0x80).ensamblador,
+        65
+      );
+    } finally {
+      if (mapaAnterior === null) {
+        propiedades.deleteProperty(CLAVE_MAPA_FUENTE);
+      } else {
+        propiedades.setProperty(
+          CLAVE_MAPA_FUENTE,
+          mapaAnterior
+        );
+      }
+
+      Traza.cache_ = null;
+    }
+  });
+
+
+  
   const ss = SpreadsheetApp.getActive();
   const tabla = TablaMarcos.rango_();
   const ram = UtilMemoria.rangoMatriz();

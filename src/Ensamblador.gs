@@ -124,13 +124,32 @@ const Ensamblador = {
       if (s.entrada.bytes === 2) {
         const op = s.operandos.find(o => o.tipo === 'INM' || o.tipo === 'MEM' || o.tipo === 'DIR' || o.tipo === 'KBD' || o.tipo === 'LCD');
         const valor = Ensamblador.resolver_(op, tabla, s.linea, error);
-        if (valor === null) {
-            bytes.push(0);
-            } else if (virtual && op.tipo === 'MEM' && valor >= 0x100) {
-               bytes.push(valor - 0x100);
-            } else {
-               bytes.push(valor);
-            }
+        
+        let valorCodificado = valor;
+
+        if (valor !== null &&
+            virtual &&
+            op.tipo === 'MEM' &&
+            valor >= 0x100 &&
+            valor <= 0x1DF) {
+          valorCodificado = valor - 0x100;
+        }
+
+        if (valorCodificado !== null &&
+            (!Number.isInteger(valorCodificado) ||
+             valorCodificado < 0 ||
+             valorCodificado > 0xFF)) {
+          error(
+            s.linea,
+            'Operando fuera de rango de 8 bits: ' + valor
+          );
+          bytes.push(0);
+        } else {
+          bytes.push(
+            valorCodificado === null ? 0 : valorCodificado
+          );
+        }
+
       }
       bytes.forEach((b, i) => { res.memoria[s.direccion + i] = b; });
       res.listado.push({ direccion: s.direccion, bytes: bytes, fuente: s.fuente, linea: s.linea });

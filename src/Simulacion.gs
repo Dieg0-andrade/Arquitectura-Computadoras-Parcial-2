@@ -103,7 +103,10 @@ const Simulacion = {
       };
     }
     Ensamblador.cargarEnMemoria(resultado);
-    Traza.guardarMapaFuente(resultado.listado);
+    Traza.guardarMapaFuente(
+    resultado.listado,
+    resultado.virtual
+    );
     Traza.guardarMapaAlto(mapaAlto);
     Simulacion.reiniciar();
     const codigo = resultado.listado.filter(
