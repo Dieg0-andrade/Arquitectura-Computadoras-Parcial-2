@@ -6,25 +6,49 @@
  */
 const AccesoMemoria = {
 
+  
   leer(dirVirtual, tipo) {
     AccesoMemoria.validarTipo_(tipo);
-    AccesoMemoria.validarDireccion_(dirVirtual);
+
+    const direccion =
+      MMU.estaActiva() &&
+      Ensamblador.modoVirtualActivo() &&
+      tipo === 'D' &&
+      Number.isInteger(dirVirtual) &&
+      dirVirtual >= 0 &&
+      dirVirtual < 0x100
+        ? 0x100 + dirVirtual
+        : dirVirtual;
+
+    AccesoMemoria.validarDireccion_(direccion);
 
     return AccesoMemoria.acceder_(
-      dirVirtual, tipo, false
+      direccion, tipo, false
     );
   },
 
+
+  
   escribir(dirVirtual, valor) {
-    AccesoMemoria.validarDireccion_(dirVirtual);
+    const direccion =
+      MMU.estaActiva() &&
+      Ensamblador.modoVirtualActivo() &&
+      Number.isInteger(dirVirtual) &&
+      dirVirtual >= 0 &&
+      dirVirtual < 0x100
+        ? 0x100 + dirVirtual
+        : dirVirtual;
+
+    AccesoMemoria.validarDireccion_(direccion);
     UtilMemoria.validarByte(valor);
 
     const acceso = AccesoMemoria.acceder_(
-      dirVirtual, 'D', true, valor
+      direccion, 'D', true, valor
     );
 
     return { info: acceso.info };
   },
+
 
   acceder_(dirVirtual, tipo, escritura, valor) {
     // La MMU traduce antes de consultar la cache.

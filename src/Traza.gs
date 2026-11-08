@@ -19,9 +19,20 @@ const Traza = {
   cache_: null,
 
   /** Guarda dirección -> línea de ensamblador a partir del listado del ensamblador. */
-  guardarMapaFuente(listado) {
+  guardarMapaFuente(listado, virtual) {
     const mapa = {};
-    listado.forEach(l => { if (l.direccion <= MAPA_MEMORIA.CODIGO_FIN) mapa[l.direccion] = l.linea; });
+    
+    const limiteCodigo = virtual
+      ? 0xFF
+      : MAPA_MEMORIA.CODIGO_FIN;
+
+    listado.forEach(l => {
+      if (l.direccion >= 0 &&
+          l.direccion <= limiteCodigo) {
+        mapa[l.direccion] = l.linea;
+      }
+    });
+
     PropertiesService.getDocumentProperties().setProperty(CLAVE_MAPA_FUENTE, JSON.stringify(mapa));
     Traza.cache_ = null;
   },
