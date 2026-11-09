@@ -832,6 +832,4 @@ by an installable `onEdit` trigger, and RUN stops before Apps Script's 6-minute 
 | **Daniel Roca** | RAM in frames, Swap, frame table, MMU, page fault, FIFO/LRU, loader | 8 (and test cases in `docs/testing.md`) |
 | **Diego Andrade** | Cache and I/O panels, cache engine, memory integration, hit/miss animation, keyboard, LCD, `IN`/`OUT`, catalog and editor | 9, 10, 13 |
 
-Presentation and defense material (in Spanish): [`docs/defensa.md`](docs/defensa.md).
-
 Each member completes **their section in both languages** ([`README.md`](README.md) and this file).

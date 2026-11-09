@@ -832,6 +832,4 @@ atendidas por un activador `onEdit` instalable, y EJECUTAR se detiene antes del 
 | **Daniel Roca** | RAM en marcos, Swap, tabla de marcos, MMU, Page Fault, FIFO/LRU, cargador | 8 (y casos de prueba en `docs/testing.md`) |
 | **Diego Andrade** | Paneles de caché y E/S, motor de caché, integración con memoria, animación hit/miss, teclado, LCD, `IN`/`OUT`, catálogo y editor | 9, 10, 13 |
 
-Material para la exposición y la defensa: [`docs/defensa.md`](docs/defensa.md).
-
 Cada integrante completa **su sección en los dos idiomas** (este archivo y [`README_EN.md`](README_EN.md)).
