@@ -22,18 +22,25 @@ const Cache = {
     };
   },
 
-  cargarEstado_() {
-    const texto = PropertiesService
-      .getDocumentProperties()
-      .getProperty(Cache.CLAVE_ESTADO);
+  // Copia en memoria del estado guardado (tarea 1-10): se lee de
+  // PropertiesService una sola vez por ejecución. Cada carga devuelve un
+  // objeto nuevo, igual que antes, y cada guardado sigue escribiendo la propiedad.
+  texto_: null,
 
-    return texto ? JSON.parse(texto) : Cache.estadoInicial_();
+  cargarEstado_() {
+    if (Cache.texto_ === null) {
+      Cache.texto_ = PropertiesService
+        .getDocumentProperties()
+        .getProperty(Cache.CLAVE_ESTADO) || '';
+    }
+    return Cache.texto_ ? JSON.parse(Cache.texto_) : Cache.estadoInicial_();
   },
 
   guardarEstado_(estado) {
+    Cache.texto_ = JSON.stringify(estado);
     PropertiesService
       .getDocumentProperties()
-      .setProperty(Cache.CLAVE_ESTADO, JSON.stringify(estado));
+      .setProperty(Cache.CLAVE_ESTADO, Cache.texto_);
   },
 
   reiniciar() {

@@ -30,39 +30,59 @@ const Registros = {
 
   leer(nombre) {
     Registros.validarRegistro_(nombre);
+    if (nombre in Registros.valores_) return Registros.valores_[nombre];
     const crudo = Registros.rango_(nombre).getDisplayValue();
     const valor = UtilMemoria.parsearByte(crudo);
     if (valor === null) throw new Error('Valor inválido "' + crudo + '" en el registro ' + nombre);
+    Registros.valores_[nombre] = valor;
     return valor;
   },
 
   escribir(nombre, valor) {
     Registros.validarRegistro_(nombre);
     UtilMemoria.validarByte(valor);
+    Registros.valores_[nombre] = valor;
     Registros.rango_(nombre).setValue(UtilMemoria.aHex(valor));
   },
 
   leerBanderas() {
     const banderas = {};
-    LISTA_BANDERAS.forEach(f => { banderas[f] = Registros.rango_(f).getDisplayValue() === '1' ? 1 : 0; });
+    LISTA_BANDERAS.forEach(f => {
+      if (!(f in Registros.valores_)) Registros.valores_[f] = Registros.rango_(f).getDisplayValue() === '1' ? 1 : 0;
+      banderas[f] = Registros.valores_[f];
+    });
     return banderas;
   },
 
   escribirBanderas(banderas) {
     Object.keys(banderas).forEach(f => {
       if (LISTA_BANDERAS.indexOf(f) === -1) throw new Error('Bandera desconocida: ' + f);
+      Registros.valores_[f] = banderas[f] ? 1 : 0;
       Registros.rango_(f).setValue(banderas[f] ? '1' : '0');
     });
   },
 
   leerTexto(campo) {
     Registros.validarTexto_(campo);
-    return Registros.rango_(campo).getDisplayValue();
+    const clave = 'texto:' + campo;
+    if (!(clave in Registros.valores_)) Registros.valores_[clave] = Registros.rango_(campo).getDisplayValue();
+    return Registros.valores_[clave];
   },
 
   escribirTexto(campo, texto) {
     Registros.validarTexto_(campo);
+    Registros.valores_['texto:' + campo] = String(texto);
     Registros.rango_(campo).setValue(String(texto));
+  },
+
+  /**
+   * Olvida la copia en memoria: la próxima lectura vuelve a leer la hoja.
+   * Simulacion lo llama al empezar cada acción (PASO, INSTRUCCIÓN, cada
+   * instrucción de EJECUTAR), así un valor editado a mano en la hoja CPU se
+   * ve en el siguiente paso aunque el programa esté corriendo.
+   */
+  olvidar() {
+    Registros.valores_ = {};
   },
 
   instantanea() {
@@ -92,6 +112,14 @@ const Registros = {
 
   /** Guarda cada rango ya buscado: getRangeByName es lento si se llama en cada paso. */
   cache_: {},
+
+  /**
+   * Copia en memoria de los valores (tarea 1-10). Leer una celda después de
+   * escribir otra obliga a Sheets a sincronizar y es lo más lento del
+   * simulador; con esta copia las lecturas no tocan la hoja. Todas las
+   * escrituras siguen yendo a la hoja, que continúa siendo la fuente de verdad.
+   */
+  valores_: {},
 
   rango_(nombre) {
     if (Registros.cache_[nombre]) return Registros.cache_[nombre];
