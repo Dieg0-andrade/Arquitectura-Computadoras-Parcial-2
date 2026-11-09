@@ -17,17 +17,26 @@ const MMU = {
   
   CLAVE_VIRTUAL: 'MMU_VIRTUAL_ACTIVA',
 
+  // Copia en memoria del modo (tarea 1-10): estaActiva() se consulta en cada
+  // acceso a memoria y leer PropertiesService cada vez es muy lento en Sheets.
+  // Solo activarMemoriaVirtual() cambia el modo, así que la copia es exacta.
+  activa_: null,
+
   activarMemoriaVirtual(activa) {
     PropertiesService.getDocumentProperties()
       .setProperty(
         MMU.CLAVE_VIRTUAL,
         activa ? '1' : '0'
       );
+    MMU.activa_ = Boolean(activa);
   },
 
   estaActiva() {
-    return PropertiesService.getDocumentProperties()
-      .getProperty(MMU.CLAVE_VIRTUAL) === '1';
+    if (MMU.activa_ === null) {
+      MMU.activa_ = PropertiesService.getDocumentProperties()
+        .getProperty(MMU.CLAVE_VIRTUAL) === '1';
+    }
+    return MMU.activa_;
   },
 
 

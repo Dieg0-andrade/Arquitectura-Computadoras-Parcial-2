@@ -28,6 +28,7 @@ const Simulacion = {
   },
 
   reiniciar() {
+    Simulacion.olvidarCopias_();
     UnidadControl.reiniciar();
     LogMicroops.limpiar();
     Resaltado.limpiar();
@@ -126,6 +127,7 @@ const Simulacion = {
    * cada micro-operación va al log y la última se resalta en la hoja.
    */
   ejecutar_(accion) {
+    Simulacion.olvidarCopias_();
     const eventos = [];
     UnidadControl.limpiarSuscriptores();
     UnidadControl.suscribir(e => { eventos.push(e); LogMicroops.agregar(e); });
@@ -152,6 +154,15 @@ const Simulacion = {
     const resumen = Simulacion.resumen_(ultimo || retorno);
     if (typeof retorno === 'number') resumen.pasosEjecutados = retorno;
     return resumen;
+  },
+
+  /**
+   * Al empezar cada acción se vuelven a leer de la hoja los registros y la
+   * RAM, por si se editaron a mano (por ejemplo, en vivo durante EJECUTAR).
+   */
+  olvidarCopias_() {
+    Registros.olvidar();
+    UtilMemoria.olvidar();
   },
 
   /** Datos que muestra el panel: último paso y estado del CPU. */

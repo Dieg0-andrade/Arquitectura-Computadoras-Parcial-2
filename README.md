@@ -19,7 +19,7 @@ ciclo de instrucción completo con **micro-palabra de control**, **buses con buf
 - Diego Andrade
 - Daniel Roca
 
-> 🔗 **Simulador:** [Abrir la hoja de cálculo](PEGA_AQUI_EL_ENLACE_DE_TU_HOJA) — el enlace final termina en `/copy`, así quien lo abre obtiene su propia copia con el script incluido.
+> 🔗 **Simulador:** [Hacer una copia de la hoja de cálculo](https://docs.google.com/spreadsheets/d/13oXSHVaRQuWlUSj4PYN13QRjcHq-YjIuygGE0FeFRxw/copy) — el enlace termina en `/copy`: quien lo abre obtiene su propia copia con el script incluido.
 >
 > 📦 **Repositorio:** [https://github.com/Dieg0-andrade/Arquitectura-Computadoras-Parcial-2](https://github.com/Dieg0-andrade/Arquitectura-Computadoras-Parcial-2)
 
@@ -831,7 +831,5 @@ atendidas por un activador `onEdit` instalable, y EJECUTAR se detiene antes del 
 | **Adrian Rada** | Repo y Kanban, contrato de memoria, CX/DX e ISA, micro-palabra, buses tri-estado, Unidad de Control, vista de buses, identidad y controles, README | 1–7, 11–12, 14–17 |
 | **Daniel Roca** | RAM en marcos, Swap, tabla de marcos, MMU, Page Fault, FIFO/LRU, cargador | 8 (y casos de prueba en `docs/testing.md`) |
 | **Diego Andrade** | Paneles de caché y E/S, motor de caché, integración con memoria, animación hit/miss, teclado, LCD, `IN`/`OUT`, catálogo y editor | 9, 10, 13 |
-
-Material para la exposición y la defensa: [`docs/defensa.md`](docs/defensa.md).
 
 Cada integrante completa **su sección en los dos idiomas** (este archivo y [`README_EN.md`](README_EN.md)).

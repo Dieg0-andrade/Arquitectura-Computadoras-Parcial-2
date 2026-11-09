@@ -19,7 +19,7 @@ page faults, **L1I / L1D / L2 cache**, and a memory-mapped **keyboard and LCD**.
 - Diego Andrade
 - Daniel Roca
 
-> 🔗 **Simulator:** [Open the spreadsheet](PEGA_AQUI_EL_ENLACE_DE_TU_HOJA) — the final link ends in `/copy`, so whoever opens it gets their own copy with the script included.
+> 🔗 **Simulator:** [Make a copy of the spreadsheet](https://docs.google.com/spreadsheets/d/13oXSHVaRQuWlUSj4PYN13QRjcHq-YjIuygGE0FeFRxw/copy) — the link ends in `/copy`: whoever opens it gets their own copy with the script included.
 >
 > 📦 **Repository:** [https://github.com/Dieg0-andrade/Arquitectura-Computadoras-Parcial-2](https://github.com/Dieg0-andrade/Arquitectura-Computadoras-Parcial-2)
 
@@ -831,7 +831,5 @@ by an installable `onEdit` trigger, and RUN stops before Apps Script's 6-minute 
 | **Adrian Rada** | Repo and Kanban, memory contract, CX/DX and ISA, control word, tri-state buses, control unit, bus view, identity and controls, README | 1–7, 11–12, 14–17 |
 | **Daniel Roca** | RAM in frames, Swap, frame table, MMU, page fault, FIFO/LRU, loader | 8 (and test cases in `docs/testing.md`) |
 | **Diego Andrade** | Cache and I/O panels, cache engine, memory integration, hit/miss animation, keyboard, LCD, `IN`/`OUT`, catalog and editor | 9, 10, 13 |
-
-Presentation and defense material (in Spanish): [`docs/defensa.md`](docs/defensa.md).
 
 Each member completes **their section in both languages** ([`README.md`](README.md) and this file).

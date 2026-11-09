@@ -56,7 +56,7 @@ const Identidad = {
     hoja.setColumnWidth(1, 16);
     hoja.setColumnWidths(2, 3, 80);      // B:D -> logo
     hoja.setColumnWidth(5, 24);
-    hoja.setColumnWidths(6, 1, 150);     // F   -> color / control
+    hoja.setColumnWidths(6, 1, 230);     // F   -> color / control
     hoja.setColumnWidths(7, 1, 460);     // G   -> descripción
 
     Identidad.insertarLogo_(hoja, 2, 2, 220);
