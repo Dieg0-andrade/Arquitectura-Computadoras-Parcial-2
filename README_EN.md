@@ -20,6 +20,8 @@ page faults, **L1I / L1D / L2 cache**, and a memory-mapped **keyboard and LCD**.
 - Daniel Roca
 
 > 🔗 **Simulator:** [Open the spreadsheet](PEGA_AQUI_EL_ENLACE_DE_TU_HOJA) — the final link ends in `/copy`, so whoever opens it gets their own copy with the script included.
+>
+> 📦 **Repository:** [https://github.com/Dieg0-andrade/Arquitectura-Computadoras-Parcial-2](https://github.com/Dieg0-andrade/Arquitectura-Computadoras-Parcial-2)
 
 ---
 
@@ -382,11 +384,12 @@ on every step, and the **Buses** sheet draws it with the buffers in green or gra
 
 ## 9. L1I / L1D / L2 cache
 
-> ✍️ **Section owned by Diego Andrade** (tasks 3-x). To be completed in task **3-10** with the test cases and screenshots of the Cache_IO sheet.
+> **Technical documentation** (Diego Andrade): [Cache, I/O and program catalog](docs/cache-io.md).
 
 - **Access order:** CPU → MMU → L1I (instructions) or L1D (data) → L2 → RAM. The cache works with **physical addresses**.
 - **L1I and L1D:** one 8 B line each. **L2:** 32 B (4 lines of 8 B), shared.
-- **Direct mapping** and **write-through** policy (writes go to L1D, L2 and RAM).
+- **Write-through** with **write-allocate**: RAM and every cached copy of the datum in L1I, L1D and L2 are updated.
+- An L1 hit does not count in L2. **Hit rate** = hits / (hits + misses), 0 before the first access.
 - **Hit and miss counters** per level and **hit rate**. Each access is painted green (hit) or red (miss) on the **Cache_IO** sheet and noted in the Log.
 - Accesses to page 15 (I/O) **bypass the cache**. Loading a program or evicting a page invalidates the affected lines.
 
@@ -394,14 +397,15 @@ on every step, and the **Buses** sheet draws it with the buffers in green or gra
 
 ## 10. I/O peripherals
 
-> ✍️ **Section owned by Diego Andrade** (tasks 3-5 to 3-7). To be completed in task **3-10**.
+> **Technical documentation** (Diego Andrade): [Cache, I/O and program catalog](docs/cache-io.md).
 
 | Device | Virtual address | Physical address | Instruction | Control word |
 |---|---|---|---|---|
 | **Keyboard** (8 B circular FIFO queue) | `1F0h – 1F7h` | `F0h – F7h` | `IN r, [KBD]` | `IO` `Mem_R` `En_KBD` `Ld_MDR` |
 | **8x1 LCD** (8 B buffer) | `1F8h – 1FFh` | `F8h – FFh` | `OUT [LCD], r` | `IO` `Mem_W` `En_MDR` `Ld_LCD` |
 
-- On the **Cache_IO** sheet, type a character into the keyboard panel and it is queued; `IN` dequeues it into the register.
+- On the **Cache_IO** sheet, type a character into cell **C33** and it is queued (shown in `B31:I31`, in output order); `IN` takes the oldest byte. A full queue rejects new input; reading an empty queue returns 0.
+- The LCD is shown in `Cache_IO!K31:R31`; ASCII codes 32–126 are displayed as characters.
 - `OUT` writes one byte to the LCD buffer and the 8-character display refreshes.
 - Both use the external bus with `IO = 1` and always go through the MDR.
 
@@ -532,6 +536,7 @@ The same commands are in the **Simulador CPU** menu and in the sidebar (**Simula
 | **Cache_IO** | L1I, L1D, L2, counters and hit rate, keyboard and LCD |
 | **Swap** | The 16 virtual pages of 32 B |
 | **TablaMarcos** | Page table (P, PFN, Dirty, Ref), last translation, FIFO / LRU and fault counters |
+| **Programas** | Catalog of the 3 programs: selection, loading and result check |
 
 ### Color legend
 The same legend is on the **Inicio** sheet and, in compact form, on the **CPU** sheet below the controls.
@@ -563,14 +568,17 @@ The same legend is on the **Inicio** sheet and, in compact form, on the **CPU** 
 
 ### Program catalog
 
-> ✍️ **Section owned by Diego Andrade** (task 3-8). To be completed with the 3 programs on the **Programas** sheet:
-> (1) arithmetic with loops using AX, BX, CX and DX · (2) keyboard echo to the LCD · (3) scattered accesses that cause page faults and cache misses.
+**Programas** sheet (menu **Simulador CPU → Abrir catalogo de programas**): pick the program in `B3`, load it with **Cargar programa del catalogo**, run it with the controls and check it with **Verificar resultado del catalogo**. Details in [`docs/cache-io.md`](docs/cache-io.md).
 
-| # | Program | What it shows |
-|---|---|---|
-| 1 | _pending_ | Loops and the 4 registers |
-| 2 | _pending_ | `IN` / `OUT` with keyboard and LCD |
-| 3 | _pending_ | Page fault, replacement and cache misses |
+| # | Program | What it does | Expected result |
+|---|---|---|---|
+| 1 | **Bucle aritmetico AX-DX** (arithmetic loop) | Adds 4 three times: AX accumulates, BX holds 4, CX counts the iterations (`DEC CX` + `JNZ`) and DX keeps the result | HLT · AX = 12, BX = 4, CX = 0, DX = 12 |
+| 2 | **Eco teclado-LCD** (keyboard echo) | `IN AX, [KBD]` reads the letter typed in `Cache_IO!C33` and `OUT [LCD], AX` shows it in the first LCD position | HLT · AX = ASCII code · the LCD shows the letter |
+| 3 | **Accesos dispersos** (scattered accesses) | Adds data spread over 7 pages; the page holding `p6` starts absent | HLT · AX = 28 · page faults > 0 · L1D and L2 misses > 0 |
+
+### Assembly editor
+
+Menu **Simulador CPU → Abrir editor de ensamblador**: write the program on the **Código** sheet, **Validar sintaxis del editor** marks the line with an error, and **Cargar editor en memoria virtual** assembles it and loads it into the virtual pages.
 
 ### Parcial 1 demo program and trace
 
@@ -712,7 +720,7 @@ _f1:
 
 ## 14. Tests
 
-Menu **Simulador CPU → Pruebas → Ejecutar todas** → **258/258 passing** (also in Node: `node herramientas/probar-local.js`).
+Menu **Simulador CPU → Pruebas → Ejecutar todas** → **273/273 passing**, and **Pruebas → Integración final** → **12/12** (also in Node: `node herramientas/probar-local.js`). They run separately so neither gets close to Apps Script's 6-minute limit.
 
 | Suite | Tests | What it covers |
 |---|---|---|
@@ -727,15 +735,17 @@ Menu **Simulador CPU → Pruebas → Ejecutar todas** → **258/258 passing** (a
 | Vista de buses | 10 | Buses sheet: buffer colors, bus line, bits per micro-step |
 | Identidad y controles | 11 | cover, legend, STEP / RUN / PAUSE / RESET with every module |
 | Ensamblador | 16 | lexer, two passes, variables, errors, loading |
+| Carga virtual | 9 | assembler and loader on virtual pages (code 0–7, data 8–14) |
 | Unidad de control | 18 | phases, operands, jumps, HLT, control word emitted and validated on every step |
 | Simulación | 13 | log (with control word), panel, highlighting, controls |
 | Swap · Tabla de marcos · MMU | 6 · 7 · 7 | virtual storage, P/PFN/Dirty/Ref entries, translation |
 | Page fault · FIFO/LRU replacement · Visualization | 7 · 7 · 7 | load from swap and retry, victim, dirty write-back, colors and counters |
+| Virtual memory: final check | 6 | scattered access, dirty eviction, FIFO vs LRU ([`docs/testing.md`](docs/testing.md)) |
 | Casos borde | 11 | overflow, negatives, both jump branches, demos |
 | Compilador y traza | 11 | lexer, AST, code generation, errors, trace |
 
-Additional cache and I/O tests (*Pruebas* menu or from Apps Script): `probarJerarquiaCache`, `probarIntegracionCache`,
-`probarAnimacionCache`, `probarTecladoFIFO`, `probarLCD`, `probarInOut`.
+**Final integration** (12): cache hierarchy, memory integration, hit/miss animation, keyboard FIFO, LCD, `IN`/`OUT`,
+editor, the **3 catalog programs running to HLT**, and no step using two bus drivers.
 
 ---
 
@@ -821,5 +831,7 @@ by an installable `onEdit` trigger, and RUN stops before Apps Script's 6-minute 
 | **Adrian Rada** | Repo and Kanban, memory contract, CX/DX and ISA, control word, tri-state buses, control unit, bus view, identity and controls, README | 1–7, 11–12, 14–17 |
 | **Daniel Roca** | RAM in frames, Swap, frame table, MMU, page fault, FIFO/LRU, loader | 8 (and test cases in `docs/testing.md`) |
 | **Diego Andrade** | Cache and I/O panels, cache engine, memory integration, hit/miss animation, keyboard, LCD, `IN`/`OUT`, catalog and editor | 9, 10, 13 |
+
+Presentation and defense material (in Spanish): [`docs/defensa.md`](docs/defensa.md).
 
 Each member completes **their section in both languages** ([`README.md`](README.md) and this file).

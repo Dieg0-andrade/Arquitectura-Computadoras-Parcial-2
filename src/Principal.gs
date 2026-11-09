@@ -49,7 +49,8 @@ function onOpen() {
       .addItem('Unidad de control', 'probarUnidadControl')
       .addItem('Simulación', 'probarSimulacion')
       .addItem('Casos borde', 'probarBorde')
-      .addItem('Compilador', 'probarCompilador'))
+      .addItem('Compilador', 'probarCompilador')
+      .addItem('Integración final (caché, E/S, catálogo)', 'probarIntegracionFinal'))
     .addToUi();
 }
 

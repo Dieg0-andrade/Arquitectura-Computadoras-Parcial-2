@@ -20,6 +20,8 @@ ciclo de instrucción completo con **micro-palabra de control**, **buses con buf
 - Daniel Roca
 
 > 🔗 **Simulador:** [Abrir la hoja de cálculo](PEGA_AQUI_EL_ENLACE_DE_TU_HOJA) — el enlace final termina en `/copy`, así quien lo abre obtiene su propia copia con el script incluido.
+>
+> 📦 **Repositorio:** [https://github.com/Dieg0-andrade/Arquitectura-Computadoras-Parcial-2](https://github.com/Dieg0-andrade/Arquitectura-Computadoras-Parcial-2)
 
 ---
 
@@ -369,7 +371,7 @@ en cada paso, y la hoja **Buses** la dibuja con los buffers en verde o gris.
 
 ## 8. Memoria virtual
 
-> ✍️ **Sección a cargo de Daniel Roca** (tareas 2-x). Completar en la tarea **2-9** con los casos de prueba de `docs/testing.md` y capturas de la hoja TablaMarcos.
+> **Documentación técnica** (Daniel Roca): [Memoria virtual (ES)](docs/memoria-virtual.md) · [Virtual memory (EN)](docs/virtual-memory.md) · [Resultados de pruebas](docs/testing.md).
 
 - **512 B virtuales** (16 páginas de 32 B) sobre **256 B de RAM** (8 marcos de 32 B). La hoja **Swap** guarda las 16 páginas (es el "disco").
 - **Tabla de marcos** (hoja **TablaMarcos**): una fila por página con `VPN`, `P` (presente), `PFN`, `Dirty` y `Ref`.
@@ -382,11 +384,12 @@ en cada paso, y la hoja **Buses** la dibuja con los buffers en verde o gris.
 
 ## 9. Caché L1I / L1D / L2
 
-> ✍️ **Sección a cargo de Diego Andrade** (tareas 3-x). Completar en la tarea **3-10** con los casos de prueba y capturas de la hoja Cache_IO.
+> **Documentación técnica** (Diego Andrade): [Caché, E/S y catálogo](docs/cache-io.md).
 
 - **Orden de acceso:** CPU → MMU → L1I (instrucciones) o L1D (datos) → L2 → RAM. La caché trabaja con **direcciones físicas**.
 - **L1I y L1D:** una línea de 8 B cada una. **L2:** 32 B (4 líneas de 8 B), compartida.
-- **Mapeo directo** y política de escritura **write-through** (escribe en L1D, L2 y RAM).
+- Política de escritura **write-through** con **write-allocate**: se actualizan la RAM y las copias del dato en L1I, L1D y L2.
+- Un hit en L1 no cuenta en L2. **Hit Rate** = hits / (hits + misses), 0 si todavía no hubo accesos.
 - **Contadores** de hits y misses por nivel y **Hit Rate**. Cada acceso se pinta en verde (hit) o rojo (miss) en la hoja **Cache_IO** y se anota en el Log.
 - Los accesos a la página 15 (E/S) **no pasan por la caché**. Cargar un programa o desalojar una página invalida las líneas afectadas.
 
@@ -394,14 +397,15 @@ en cada paso, y la hoja **Buses** la dibuja con los buffers en verde o gris.
 
 ## 10. Periféricos de E/S
 
-> ✍️ **Sección a cargo de Diego Andrade** (tareas 3-5 a 3-7). Completar en la tarea **3-10**.
+> **Documentación técnica** (Diego Andrade): [Caché, E/S y catálogo](docs/cache-io.md).
 
 | Dispositivo | Dirección virtual | Dirección física | Instrucción | Micro-palabra |
 |---|---|---|---|---|
 | **Teclado** (cola FIFO circular de 8 B) | `1F0h – 1F7h` | `F0h – F7h` | `IN r, [KBD]` | `IO` `Mem_R` `En_KBD` `Ld_MDR` |
 | **LCD 8x1** (buffer de 8 B) | `1F8h – 1FFh` | `F8h – FFh` | `OUT [LCD], r` | `IO` `Mem_W` `En_MDR` `Ld_LCD` |
 
-- En la hoja **Cache_IO** se escribe un carácter en el panel del teclado y queda en la cola; `IN` lo saca y lo deja en el registro.
+- En la hoja **Cache_IO** se escribe un carácter en la celda **C33** y queda en la cola (se ve en `B31:I31`, en orden de salida); `IN` saca el byte más antiguo. Con la cola llena se rechaza la entrada; leerla vacía devuelve 0.
+- El LCD se ve en `Cache_IO!K31:R31`; los códigos ASCII 32–126 se muestran como caracteres.
 - `OUT` escribe un byte en el buffer del LCD y la pantalla de 8 caracteres se refresca.
 - Los dos usan el bus externo con la señal `IO = 1` y siempre pasan por el MDR.
 
@@ -530,6 +534,7 @@ Los mismos comandos están en el menú **Simulador CPU** y en el panel lateral (
 | **Cache_IO** | L1I, L1D, L2, contadores y Hit Rate, teclado y LCD |
 | **Swap** | Las 16 páginas virtuales de 32 B |
 | **TablaMarcos** | Tabla de páginas (P, PFN, Dirty, Ref), última traducción, FIFO / LRU y contadores de fallos |
+| **Programas** | Catálogo de los 3 programas: selección, carga y verificación del resultado |
 
 ### Leyenda de colores
 La misma leyenda está en la hoja **Inicio** y, compacta, en la hoja **CPU** debajo de los controles.
@@ -561,14 +566,17 @@ La misma leyenda está en la hoja **Inicio** y, compacta, en la hoja **CPU** deb
 
 ### Catálogo de programas
 
-> ✍️ **Sección a cargo de Diego Andrade** (tarea 3-8). Completar con los 3 programas de la hoja **Programas**:
-> (1) aritmético con bucles usando AX, BX, CX y DX · (2) teclado con eco al LCD · (3) accesos dispersos que provocan Page Faults y fallos de caché.
+Hoja **Programas** (menú **Simulador CPU → Abrir catalogo de programas**): se elige el programa en `B3`, se carga con **Cargar programa del catalogo**, se ejecuta con los controles y se comprueba con **Verificar resultado del catalogo**. Detalle en [`docs/cache-io.md`](docs/cache-io.md).
 
-| # | Programa | Qué demuestra |
-|---|---|---|
-| 1 | _pendiente_ | Bucles y los 4 registros |
-| 2 | _pendiente_ | `IN` / `OUT` con teclado y LCD |
-| 3 | _pendiente_ | Page Fault, reemplazo y misses de caché |
+| # | Programa | Qué hace | Resultado esperado |
+|---|---|---|---|
+| 1 | **Bucle aritmetico AX-DX** | Suma 4 tres veces: AX acumula, BX vale 4, CX cuenta las vueltas (`DEC CX` + `JNZ`) y DX guarda el resultado | HLT · AX = 12, BX = 4, CX = 0, DX = 12 |
+| 2 | **Eco teclado-LCD** | `IN AX, [KBD]` lee la letra ingresada en `Cache_IO!C33` y `OUT [LCD], AX` la muestra en la primera posición del LCD | HLT · AX = código ASCII · el LCD muestra la letra |
+| 3 | **Accesos dispersos** | Suma datos repartidos en 7 páginas; la página de `p6` empieza ausente | HLT · AX = 28 · Page Faults > 0 · misses en L1D y L2 > 0 |
+
+### Editor de ensamblador
+
+Menú **Simulador CPU → Abrir editor de ensamblador**: se escribe el programa en la hoja **Código**, **Validar sintaxis del editor** marca la línea con error, y **Cargar editor en memoria virtual** lo ensambla y lo carga en las páginas virtuales.
 
 ### Programa demostrativo del Parcial 1 y traza
 
@@ -712,7 +720,7 @@ _f1:
 
 ## 14. Pruebas
 
-Menú **Simulador CPU → Pruebas → Ejecutar todas** → **258/258 aprobadas** (también en Node: `node herramientas/probar-local.js`).
+Menú **Simulador CPU → Pruebas → Ejecutar todas** → **273/273 aprobadas**, y **Pruebas → Integración final** → **12/12** (también en Node: `node herramientas/probar-local.js`). Se ejecutan por separado para que ninguna se acerque al límite de 6 minutos de Apps Script.
 
 | Suite | Pruebas | Qué cubre |
 |---|---|---|
@@ -727,15 +735,17 @@ Menú **Simulador CPU → Pruebas → Ejecutar todas** → **258/258 aprobadas**
 | Vista de buses | 10 | hoja Buses: colores de buffers, línea del bus, bits por micro-paso |
 | Identidad y controles | 11 | portada, leyenda, PASO / EJECUTAR / PAUSA / REINICIAR con todos los módulos |
 | Ensamblador | 16 | léxico, dos pasadas, variables, errores, carga |
+| Carga virtual | 9 | ensamblador y cargador en páginas virtuales (código 0–7, datos 8–14) |
 | Unidad de control | 18 | fases, operandos, saltos, HLT, micro-palabra emitida y validada en cada paso |
 | Simulación | 13 | log (con micro-palabra), panel, resaltado, controles |
 | Swap · Tabla de marcos · MMU | 6 · 7 · 7 | almacenamiento virtual, entradas P/PFN/Dirty/Ref, traducción |
 | Page Fault · Reemplazo FIFO/LRU · Visualización | 7 · 7 · 7 | carga desde swap y reintento, víctima, dirty write-back, colores y contadores |
+| Memoria virtual: verificación final | 6 | acceso disperso, desalojo con Dirty, FIFO vs LRU ([`docs/testing.md`](docs/testing.md)) |
 | Casos borde | 11 | desbordamiento, negativos, ambas ramas de saltos, demos |
 | Compilador y traza | 11 | léxico, AST, generación de código, errores, traza |
 
-Pruebas adicionales de caché y E/S (menú *Pruebas* o desde Apps Script): `probarJerarquiaCache`, `probarIntegracionCache`,
-`probarAnimacionCache`, `probarTecladoFIFO`, `probarLCD`, `probarInOut`.
+**Integración final** (12): jerarquía de caché, integración con memoria, animación hit/miss, teclado FIFO, LCD, `IN`/`OUT`,
+editor, los **3 programas del catálogo hasta HLT** y que ningún paso use dos emisores en el bus.
 
 ---
 
@@ -821,5 +831,7 @@ atendidas por un activador `onEdit` instalable, y EJECUTAR se detiene antes del 
 | **Adrian Rada** | Repo y Kanban, contrato de memoria, CX/DX e ISA, micro-palabra, buses tri-estado, Unidad de Control, vista de buses, identidad y controles, README | 1–7, 11–12, 14–17 |
 | **Daniel Roca** | RAM en marcos, Swap, tabla de marcos, MMU, Page Fault, FIFO/LRU, cargador | 8 (y casos de prueba en `docs/testing.md`) |
 | **Diego Andrade** | Paneles de caché y E/S, motor de caché, integración con memoria, animación hit/miss, teclado, LCD, `IN`/`OUT`, catálogo y editor | 9, 10, 13 |
+
+Material para la exposición y la defensa: [`docs/defensa.md`](docs/defensa.md).
 
 Cada integrante completa **su sección en los dos idiomas** (este archivo y [`README_EN.md`](README_EN.md)).

@@ -164,6 +164,7 @@ const sandbox = {
   }) },
   ScriptApp: { getProjectTriggers: () => [], deleteTrigger: () => {}, newTrigger: () => conAutoReferencia(() => ({})) },
   Utilities: { sleep: () => {} },
+  LockService: { getDocumentLock: () => ({ waitLock() {}, tryLock() { return true; }, releaseLock() {}, hasLock() { return true; } }) },
   Logger: { log: m => consola.push(String(m)) },
   HtmlService: { createHtmlOutputFromFile: () => conAutoReferencia(() => ({})) }
 };

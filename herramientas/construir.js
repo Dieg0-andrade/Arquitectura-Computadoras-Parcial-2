@@ -56,6 +56,7 @@ const ORDEN = [
   'Perifericos.gs',
   'AccesoMemoria.gs',
   'VistaCache.gs',
+  'VistaCacheActividad.gs',
   'VistaBuses.gs',
   'Identidad.gs',
   'ProgramasCatalogo.gs',
