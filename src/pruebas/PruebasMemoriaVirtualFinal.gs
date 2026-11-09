@@ -164,7 +164,10 @@ function suiteMemoriaVirtualFinal_() {
     panel.setValues(respaldo.panel);
     contadores.setValues(respaldo.contadores);
     log.setValues(respaldo.log);
+    
     Cache.guardarEstado_(respaldo.cache);
+    VistaCache.actualizarContadores(respaldo.cache.estadisticas);
+
 
     if (respaldo.historial === null) {
       propiedades.deleteProperty(ManejadorFallos.CLAVE_ESTADO);
