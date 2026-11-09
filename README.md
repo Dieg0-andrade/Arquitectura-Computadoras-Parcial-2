@@ -22,7 +22,8 @@ ciclo de instrucción completo con **micro-palabra de control**, **buses con buf
 > 🔗 **Simulador:** [Hacer una copia de la hoja de cálculo](https://docs.google.com/spreadsheets/d/13oXSHVaRQuWlUSj4PYN13QRjcHq-YjIuygGE0FeFRxw/copy) — el enlace termina en `/copy`: quien lo abre obtiene su propia copia con el script incluido.
 >
 > 📦 **Repositorio:** [https://github.com/Dieg0-andrade/Arquitectura-Computadoras-Parcial-2](https://github.com/Dieg0-andrade/Arquitectura-Computadoras-Parcial-2)
-
+>
+> 🎞️ **Presentacion:** [View slides on Canva](https://canva.link/z34w6gvmg8b2gc3)
 ---
 
 ## Contenido
