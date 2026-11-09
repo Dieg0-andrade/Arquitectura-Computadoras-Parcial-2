@@ -369,7 +369,7 @@ on every step, and the **Buses** sheet draws it with the buffers in green or gra
 
 ## 8. Virtual memory
 
-> ✍️ **Section owned by Daniel Roca** (tasks 2-x). To be completed in task **2-9** with the test cases from `docs/testing.md` and screenshots of the TablaMarcos sheet.
+> **Technical documentation:** [Virtual memory (EN)](docs/virtual-memory.md) · [Memoria virtual (ES)](docs/memoria-virtual.md) · [Test results](docs/testing.md).
 
 - **512 B of virtual memory** (16 pages of 32 B) on top of **256 B of RAM** (8 frames of 32 B). The **Swap** sheet holds the 16 pages (it is the "disk").
 - **Frame table** (**TablaMarcos** sheet): one row per page with `VPN`, `P` (present), `PFN`, `Dirty` and `Ref`.
