@@ -22,7 +22,8 @@ page faults, **L1I / L1D / L2 cache**, and a memory-mapped **keyboard and LCD**.
 > 🔗 **Simulator:** [Make a copy of the spreadsheet](https://docs.google.com/spreadsheets/d/13oXSHVaRQuWlUSj4PYN13QRjcHq-YjIuygGE0FeFRxw/copy) — the link ends in `/copy`: whoever opens it gets their own copy with the script included.
 >
 > 📦 **Repository:** [https://github.com/Dieg0-andrade/Arquitectura-Computadoras-Parcial-2](https://github.com/Dieg0-andrade/Arquitectura-Computadoras-Parcial-2)
-
+>
+> 🎞️ **Presentation:** [View slides on Canva](https://canva.link/z34w6gvmg8b2gc3)
 ---
 
 ## Contents
