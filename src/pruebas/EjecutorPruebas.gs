@@ -54,5 +54,5 @@ function mostrarReporte_(suites) {
 
 function probarTodo() {
   mostrarReporte_([suiteMemoria_(), suiteAccesoMemoria_(), suiteRegistros_(), suiteRegistrosGenerales_(), suiteALU_(), suiteISA_(), suiteMicroPalabra_(), suiteBus_(), suiteVistaBuses_(), suiteIdentidad_(),
-    suiteEnsamblador_(),suiteCargaVirtual_(), suiteUnidadControl_(), suiteSimulacion_(),suiteSwap_(), suiteTablaMarcos_(),suiteMMU_(),suiteFallosPagina_(),suiteReemplazoPaginas_(),suiteVisualFallos_(), suiteBorde_(), suiteCompilador_()]);
+    suiteEnsamblador_(),suiteCargaVirtual_(), suiteUnidadControl_(), suiteSimulacion_(),suiteSwap_(), suiteTablaMarcos_(),suiteMMU_(),suiteFallosPagina_(),suiteReemplazoPaginas_(),suiteVisualFallos_(), suiteMemoriaVirtualFinal_(), suiteBorde_(), suiteCompilador_()]);
 }

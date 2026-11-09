@@ -45,6 +45,7 @@ function onOpen() {
       .addItem('Identidad y controles', 'probarIdentidad')
       .addItem('Ensamblador', 'probarEnsamblador')
       .addItem('Cargador virtual', 'probarCargaVirtual')
+      .addItem('Memoria virtual final', 'probarMemoriaVirtualFinal')
       .addItem('Unidad de control', 'probarUnidadControl')
       .addItem('Simulación', 'probarSimulacion')
       .addItem('Casos borde', 'probarBorde')
