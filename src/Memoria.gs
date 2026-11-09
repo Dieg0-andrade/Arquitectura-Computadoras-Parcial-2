@@ -4,7 +4,7 @@
 const Memoria = {
   leer(direccion) {
     UtilMemoria.validarDireccion(direccion);
-    const crudo = UtilMemoria.celdaDe(direccion).getDisplayValue();
+    const crudo = UtilMemoria.copiaRam_()[direccion];
     const valor = UtilMemoria.parsearByte(crudo);
 
     if (valor === null) {
@@ -25,21 +25,16 @@ const Memoria = {
     UtilMemoria.validarDireccion(direccion);
     UtilMemoria.validarByte(valor);
     UtilMemoria.celdaDe(direccion).setValue(UtilMemoria.aHex(valor));
+    if (UtilMemoria.ram_) UtilMemoria.ram_[direccion] = UtilMemoria.aHex(valor);
     const lcd = Perifericos.lcd;
     if (direccion >= lcd.BASE) lcd.mostrar_(direccion - lcd.BASE, [valor]);
   },
 
   volcar() {
-    const valores = UtilMemoria.rangoMatriz().getDisplayValues();
-    const bytes = [];
-
-    for (let f = 0; f < MATRIZ_RAM.TAMANO; f++) {
-      for (let c = 0; c < MATRIZ_RAM.TAMANO; c++) {
-        const v = UtilMemoria.parsearByte(valores[f][c]);
-        bytes.push(v === null ? 0 : v);
-      }
-    }
-    return bytes;
+    return UtilMemoria.copiaRam_().map(texto => {
+      const v = UtilMemoria.parsearByte(texto);
+      return v === null ? 0 : v;
+    });
   },
 
   cargar(inicio, bytes) {
@@ -56,6 +51,7 @@ const Memoria = {
     const actual = Memoria.volcar();
     bytes.forEach((b, i) => { actual[inicio + i] = b; });
     UtilMemoria.rangoMatriz().setValues(UtilMemoria.aMatriz(actual));
+    UtilMemoria.ram_ = actual.map(UtilMemoria.aHex);
     const lcd = Perifericos.lcd;
     const desde = Math.max(inicio, lcd.BASE);
     const fin = inicio + bytes.length;
@@ -66,12 +62,36 @@ const Memoria = {
   limpiar() {
     const ceros = new Array(MAPA_MEMORIA.TAMANO).fill(0);
     UtilMemoria.rangoMatriz().setValues(UtilMemoria.aMatriz(ceros));
+    UtilMemoria.ram_ = ceros.map(UtilMemoria.aHex);
     Perifericos.lcd.mostrar_(0, ceros.slice(Perifericos.lcd.BASE));
     Cache.invalidarTodo();
   }
 };
 
 const UtilMemoria = {
+  /**
+   * Copia en memoria del texto de las 256 celdas de la RAM (tarea 1-10): la
+   * matriz se lee de la hoja una vez y cada escritura actualiza la hoja y la
+   * copia. rangoMatriz() la olvida, porque quien pide la matriz puede
+   * escribirla directamente, y Simulacion la olvida al empezar cada acción
+   * para ver los valores editados a mano en la hoja RAM.
+   */
+  ram_: null,
+
+  copiaRam_() {
+    if (!UtilMemoria.ram_) {
+      const valores = UtilMemoria.rangoMatriz().getDisplayValues();
+      const textos = [];
+      valores.forEach(fila => fila.forEach(v => textos.push(v)));
+      UtilMemoria.ram_ = textos;
+    }
+    return UtilMemoria.ram_;
+  },
+
+  olvidar() {
+    UtilMemoria.ram_ = null;
+  },
+
   validarDireccion(direccion) {
     if (!Number.isInteger(direccion) || direccion < 0 || direccion >= MAPA_MEMORIA.TAMANO) {
       throw new Error('Dirección fuera de rango: ' + direccion + ' (válido 00h–FFh)');
@@ -139,6 +159,7 @@ const UtilMemoria = {
   },
 
   rangoMatriz() {
+    UtilMemoria.ram_ = null;
     return UtilMemoria.hoja().getRange(
       MATRIZ_RAM.PRIMERA_FILA, MATRIZ_RAM.PRIMERA_COL,
       MATRIZ_RAM.TAMANO, MATRIZ_RAM.TAMANO
