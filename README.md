@@ -23,7 +23,7 @@ ciclo de instrucción completo con **micro-palabra de control**, **buses con buf
 >
 > 📦 **Repositorio:** [https://github.com/Dieg0-andrade/Arquitectura-Computadoras-Parcial-2](https://github.com/Dieg0-andrade/Arquitectura-Computadoras-Parcial-2)
 >
-> 🎞️ **Presentacion:** [View slides on Canva](https://canva.link/z34w6gvmg8b2gc3)
+> 🎞️ **Presentacion:** [Ver diapositivas en Canva](https://canva.link/z34w6gvmg8b2gc3)
 ---
 
 ## Contenido
